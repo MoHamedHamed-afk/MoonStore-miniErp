@@ -1,10 +1,8 @@
 services:
   - type: web
     name: moonstore-backend
-    runtime: dotnet
+    runtime: docker
     rootDir: Backend/ShopApi
-    buildCommand: dotnet publish ShopApi.csproj -c Release -o ./publish
-    startCommand: dotnet ./publish/ShopApi.dll
     healthCheckPath: /health
     disk:
       name: moonstore-data

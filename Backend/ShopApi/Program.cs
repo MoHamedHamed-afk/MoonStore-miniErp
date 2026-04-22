@@ -7,6 +7,11 @@ using ShopApi.Data;
 using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
+var renderPort = builder.Configuration["PORT"];
+if (!string.IsNullOrWhiteSpace(renderPort))
+{
+    builder.WebHost.UseUrls($"http://0.0.0.0:{renderPort}");
+}
 
 // Add services to the container.
 builder.Services.AddControllers();
