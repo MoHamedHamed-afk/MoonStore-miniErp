@@ -1,0 +1,40 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Codex / local helpers
+.codex-temp/
+
+# Logs
+*.log
+*.err
+*.out
+*-err.txt
+*-log.txt
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Node / Angular
+Frontend/shop-ui/node_modules/
+Frontend/shop-ui/dist/
+Frontend/shop-ui/.angular/
+
+# .NET
+**/bin/
+**/obj/
+
+# Local databases
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+
+# Temporary files
+*.tmp
+tmp/
+temp/

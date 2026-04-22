@@ -1,0 +1,139 @@
+<div class="webgl-container" #canvasContainer></div>
+
+<main class="content-overlay">
+  <section class="hero">
+    <div class="container hero-layout">
+      <div class="hero-copy">
+        <h4 class="hero-label">{{ translation.t('home.heroLabel') }}</h4>
+        <h1 class="hero-title">
+          {{ translation.t('home.heroTitleLine1') }}<br>
+          <span class="accent-text">{{ translation.t('home.heroTitleAccent') }}</span>
+        </h1>
+        <p class="hero-subtitle">
+          {{ translation.t('home.heroSubtitle') }}
+        </p>
+        <a href="#winter-collection" class="btn hero-btn">{{ translation.t('home.heroButton') }}</a>
+      </div>
+
+      <div class="hero-carousel">
+        <img
+          *ngFor="let image of carouselImages; let i = index"
+          [src]="image"
+          [alt]="'Premium Moon Store Fashion Pose ' + (i + 1)"
+          class="carousel-img"
+          [style.opacity]="i === 0 ? '1' : '0'"
+          [style.transform]="i === 0 ? 'scale(1) rotateY(0deg)' : 'scale(0.8) rotateY(-90deg)'"
+        >
+      </div>
+    </div>
+  </section>
+
+  <section id="winter-collection" class="collection">
+    <div class="container">
+      <div class="season-header">
+        <p class="season-label">{{ translation.t('home.winterLabel') }}</p>
+        <h2 class="section-title">{{ translation.t('home.winterTitle') }}</h2>
+      </div>
+
+      <div class="product-grid">
+        <ng-container *ngFor="let product of winterProducts">
+          <article class="product-card glass" (click)="showDetails(product.id!)">
+            <div class="product-img-container">
+              <img [src]="getImgUrl(product.imageUrl)" [alt]="product.name" loading="lazy" class="product-image">
+              <div class="product-actions">
+                <button
+                  (click)="toggleFavorite(product); $event.stopPropagation()"
+                  class="btn-icon glass"
+                  [class.active]="isFavorite(product.id!)"
+                  [attr.aria-label]="isFavorite(product.id!) ? 'Remove from favorites' : 'Add to favorites'">
+                  {{ isFavorite(product.id!) ? '♥' : '♡' }}
+                </button>
+                <button
+                  (click)="addToCart(product); $event.stopPropagation()"
+                  class="btn-icon glass"
+                  aria-label="Add to cart">
+                  &#128722;
+                </button>
+              </div>
+            </div>
+
+            <div class="product-info">
+              <div class="product-meta">
+                <h3>{{ product.name }}</h3>
+                <span class="product-price">${{ product.price }}</span>
+              </div>
+              <p>{{ product.description }}</p>
+            </div>
+          </article>
+        </ng-container>
+      </div>
+    </div>
+  </section>
+
+  <section id="summer-collection" class="collection summer-section">
+    <div class="container">
+      <div class="season-header">
+        <p class="season-label">{{ translation.t('home.summerLabel') }}</p>
+        <h2 class="section-title">{{ translation.t('home.summerTitle') }}</h2>
+      </div>
+
+      <div class="product-grid">
+        <ng-container *ngFor="let product of summerProducts">
+          <article class="product-card glass" (click)="showDetails(product.id!)">
+            <div class="product-img-container">
+              <img [src]="getImgUrl(product.imageUrl)" [alt]="product.name" loading="lazy" class="product-image">
+              <div class="product-actions">
+                <button
+                  (click)="toggleFavorite(product); $event.stopPropagation()"
+                  class="btn-icon glass"
+                  [class.active]="isFavorite(product.id!)"
+                  [attr.aria-label]="isFavorite(product.id!) ? 'Remove from favorites' : 'Add to favorites'">
+                  {{ isFavorite(product.id!) ? '♥' : '♡' }}
+                </button>
+                <button
+                  (click)="addToCart(product); $event.stopPropagation()"
+                  class="btn-icon glass"
+                  aria-label="Add to cart">
+                  &#128722;
+                </button>
+              </div>
+            </div>
+
+            <div class="product-info">
+              <div class="product-meta">
+                <h3>{{ product.name }}</h3>
+                <span class="product-price">${{ product.price }}</span>
+              </div>
+              <p>{{ product.description }}</p>
+            </div>
+          </article>
+        </ng-container>
+      </div>
+    </div>
+  </section>
+
+  <footer class="glass footer">
+    <div class="container">
+      <div class="footer-brand-wrap">
+        <div class="footer-moon" aria-hidden="true"></div>
+        <div class="footer-brand">{{ translation.t('nav.brand') }}</div>
+      </div>
+      <p class="footer-owner">{{ translation.t('home.footerOwner') }}</p>
+      <div class="footer-links" aria-label="Contact and social links">
+        <a href="tel:01140213510" class="footer-link" aria-label="Call 01140213510">
+          <fa-icon [icon]="phoneIcon"></fa-icon>
+        </a>
+        <a href="tel:01012305634" class="footer-link" aria-label="Call 01012305634">
+          <fa-icon [icon]="phoneIcon"></fa-icon>
+        </a>
+        <a href="https://www.facebook.com/M.HamedDardeer" target="_blank" rel="noopener noreferrer" class="footer-link" aria-label="Facebook profile">
+          <fa-icon [icon]="facebookIcon"></fa-icon>
+        </a>
+        <a href="https://www.linkedin.com/in/mohamed-hamed-dardeer/" target="_blank" rel="noopener noreferrer" class="footer-link" aria-label="LinkedIn profile">
+          <fa-icon [icon]="linkedinIcon"></fa-icon>
+        </a>
+      </div>
+      <p class="footer-copy">&copy; 2026 {{ translation.t('home.footerCopy') }}</p>
+    </div>
+  </footer>
+</main>

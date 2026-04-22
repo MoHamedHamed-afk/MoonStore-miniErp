@@ -1,0 +1,325 @@
+import { AfterViewInit, Component, ElementRef, Inject, OnDestroy, PLATFORM_ID, ViewChild } from '@angular/core';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { Router, RouterModule } from '@angular/router';
+import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
+import { faFacebookF, faLinkedinIn } from '@fortawesome/free-brands-svg-icons';
+import { faPhone } from '@fortawesome/free-solid-svg-icons';
+import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import * as THREE from 'three';
+import { CartService } from '../../services/cart.service';
+import { FavouritesService } from '../../services/favourites.service';
+import { Product, ProductService } from '../../services/product.service';
+import { ToastService } from '../../services/toast.service';
+import { TranslationService } from '../../services/translation.service';
+import { assetUrl } from '../../core/api.config';
+
+if (typeof window !== 'undefined') {
+  gsap.registerPlugin(ScrollTrigger);
+}
+
+@Component({
+  selector: 'app-home',
+  standalone: true,
+  imports: [CommonModule, RouterModule, FontAwesomeModule],
+  templateUrl: './home.component.html',
+  styleUrls: ['./home.component.scss']
+})
+export class HomeComponent implements AfterViewInit, OnDestroy {
+  @ViewChild('canvasContainer', { static: true }) canvasContainer!: ElementRef;
+
+  readonly phoneIcon = faPhone;
+  readonly facebookIcon = faFacebookF;
+  readonly linkedinIcon = faLinkedinIn;
+  readonly carouselImages = [
+    'assets/images/male_pose_1.png',
+    'assets/images/male_pose_2.png',
+    'assets/images/male_pose_3.png',
+    'assets/images/female_pose_1.png',
+    'assets/images/female_pose_2.png',
+    'assets/images/female_pose_3.png'
+  ];
+
+  products: Product[] = [];
+  summerProducts: Product[] = [];
+  winterProducts: Product[] = [];
+
+  private renderer!: THREE.WebGLRenderer;
+  private scene!: THREE.Scene;
+  private camera!: THREE.PerspectiveCamera;
+  private particles!: THREE.Points;
+  private animationFrameId?: number;
+  private carouselIntervalId?: ReturnType<typeof setInterval>;
+  private resizeHandler = () => this.onWindowResize();
+  private ctx?: gsap.Context;
+
+  constructor(
+    private productService: ProductService,
+    private cartService: CartService,
+    private favService: FavouritesService,
+    private router: Router,
+    private toastService: ToastService,
+    public translation: TranslationService,
+    @Inject(PLATFORM_ID) private platformId: object
+  ) {}
+
+  ngAfterViewInit() {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    this.loadProducts();
+    this.initThreeJs();
+    this.initGsap();
+  }
+
+  addToCart(product: Product) {
+    if (!product.id) {
+      return;
+    }
+
+    this.cartService.addToCart(product.id).subscribe({
+      next: () => this.toastService.show(`${product.name} ${this.translation.t('product.addedToCart')}`, 'success'),
+      error: error => this.toastService.show(
+        this.cartService.getUserFacingError(error, this.translation.t('product.loginRequired')),
+        'error'
+      )
+    });
+  }
+
+  toggleFavorite(product: Product) {
+    if (!product.id) {
+      return;
+    }
+
+    this.favService.toggleFavorite(product.id).subscribe({
+      next: () => this.toastService.show(this.translation.t('product.updatedFavourites'), 'success'),
+      error: () => this.toastService.show(this.translation.t('product.loginRequired'), 'error')
+    });
+  }
+
+  isFavorite(productId: number): boolean {
+    return this.favService.isFavorite(productId);
+  }
+
+  showDetails(productId: number) {
+    this.router.navigate(['/product', productId]);
+  }
+
+  getImgUrl(url: string | undefined): string {
+    if (!url) {
+      return 'assets/images/placeholder.png';
+    }
+
+    if (url.startsWith('http') || url.startsWith('assets/')) {
+      return url;
+    }
+
+    return assetUrl(url);
+  }
+
+  private loadProducts() {
+    this.productService.getProducts().subscribe({
+      next: products => {
+        this.products = products.length > 0 ? products : this.getFallbackProducts();
+        this.splitCollections();
+      },
+      error: () => {
+        this.products = this.getFallbackProducts();
+        this.splitCollections();
+      }
+    });
+  }
+
+  private splitCollections() {
+    this.winterProducts = this.products.filter(product => product.category?.toLowerCase() === 'winter');
+    this.summerProducts = this.products.filter(product => product.category?.toLowerCase() === 'summer');
+  }
+
+  private getFallbackProducts(): Product[] {
+    return [
+      { id: 1, name: 'Premium 3D Hoodie', description: 'Trendy streetwear hoodie floating in mid-air.', price: 120, imageUrl: 'assets/images/premium_3d_hoodie.png', category: 'Winter' },
+      { id: 2, name: 'Futuristic Sneakers', description: 'A pair of premium, futuristic trendy sneakers.', price: 250, imageUrl: 'assets/images/premium_3d_sneakers.png', category: 'Summer' },
+      { id: 3, name: 'Modern Puffer Jacket', description: 'Premium, stylish modern jacket or puffer coat.', price: 340, imageUrl: 'assets/images/premium_3d_jacket.png', category: 'Winter' },
+      { id: 4, name: 'Summer Vintage Shirt', description: 'Lightweight vintage-style summer shirt.', price: 65, imageUrl: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?q=80&w=800', category: 'Summer' },
+      { id: 5, name: 'Cargo Shorts', description: 'Premium streetwear cargo shorts.', price: 90, imageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?q=80&w=800', category: 'Summer' },
+      { id: 6, name: 'Streetwear Bucket Hat', description: 'Trendy summer bucket hat.', price: 45, imageUrl: 'https://images.unsplash.com/photo-1521369909029-2afed882ba54?q=80&w=800', category: 'Summer' },
+      { id: 7, name: 'Winter Knit Beanie', description: 'Warm winter knit beanie cap.', price: 35, imageUrl: 'https://images.unsplash.com/photo-1576871337622-98d48d1cf531?q=80&w=800', category: 'Winter' },
+      { id: 8, name: 'Tactical Winter Boots', description: 'Heavy duty tactical winter boots.', price: 210, imageUrl: 'https://images.unsplash.com/photo-1520639888713-7851133b1ed0?q=80&w=800', category: 'Winter' },
+      { id: 9, name: 'Designer Scarf', description: 'Premium soft designer scarf.', price: 110, imageUrl: 'https://images.unsplash.com/photo-1601379430166-70eeb04e2808?q=80&w=800', category: 'Winter' }
+    ];
+  }
+
+  private initThreeJs() {
+    const container = this.canvasContainer.nativeElement as HTMLElement;
+    this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    this.camera.position.z = 5;
+
+    this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    container.appendChild(this.renderer.domElement);
+
+    const particlesGeometry = new THREE.BufferGeometry();
+    const particleCount = 700;
+    const positions = new Float32Array(particleCount * 3);
+
+    for (let index = 0; index < positions.length; index++) {
+      positions[index] = (Math.random() - 0.5) * 15;
+    }
+
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const starTexture = this.createStarTexture();
+    const material = new THREE.PointsMaterial({
+      size: 0.08,
+      color: 0x9b8ec7,
+      map: starTexture,
+      alphaMap: starTexture,
+      transparent: true,
+      opacity: 0.9,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending
+    });
+
+    this.particles = new THREE.Points(particlesGeometry, material);
+    this.scene.add(this.particles);
+
+    const animate = () => {
+      this.animationFrameId = requestAnimationFrame(animate);
+      this.particles.rotation.y += 0.001;
+      this.particles.rotation.x += 0.0005;
+
+      const isDark = document.body.classList.contains('dark');
+      (this.particles.material as THREE.PointsMaterial).color.setHex(isDark ? 0x9b8ec7 : 0x222222);
+
+      this.renderer.render(this.scene, this.camera);
+    };
+
+    animate();
+    window.addEventListener('resize', this.resizeHandler);
+  }
+
+  private initGsap() {
+    this.ctx = gsap.context(() => {
+      gsap.from('.hero-copy', {
+        x: -100,
+        opacity: 0,
+        duration: 1.5,
+        ease: 'power4.out',
+        delay: 0.2
+      });
+
+      const images = document.querySelectorAll('.carousel-img');
+      let currentIndex = 0;
+
+      const cycleCarousel = () => {
+        const current = images[currentIndex];
+        currentIndex = (currentIndex + 1) % images.length;
+        const next = images[currentIndex];
+
+        gsap.timeline()
+          .to(current, {
+            opacity: 0,
+            rotationY: 90,
+            scale: 0.8,
+            duration: 1.2,
+            ease: 'power3.inOut'
+          })
+          .to(next, {
+            opacity: 1,
+            rotationY: 0,
+            scale: 1,
+            duration: 1.2,
+            ease: 'power3.inOut'
+          }, '<');
+      };
+
+      setTimeout(() => {
+        this.carouselIntervalId = setInterval(cycleCarousel, 4000);
+      }, 3000);
+
+      document.querySelectorAll('section').forEach(section => {
+        gsap.from(section, {
+          scrollTrigger: {
+            trigger: section,
+            start: 'top 80%',
+            toggleActions: 'play none none none'
+          },
+          opacity: 0,
+          y: 50,
+          duration: 1,
+          ease: 'power3.out'
+        });
+      });
+
+      document.querySelectorAll('.product-card').forEach((card, index) => {
+        gsap.from(card, {
+          scrollTrigger: {
+            trigger: card,
+            start: 'top 90%',
+            toggleActions: 'play none none none'
+          },
+          opacity: 0,
+          y: 30,
+          scale: 0.9,
+          duration: 0.8,
+          delay: (index % 3) * 0.1,
+          ease: 'power3.out'
+        });
+      });
+    });
+  }
+
+  private createStarTexture(): THREE.CanvasTexture {
+    const canvas = document.createElement('canvas');
+    canvas.width = 64;
+    canvas.height = 64;
+    const context = canvas.getContext('2d');
+
+    if (context) {
+      const gradient = context.createRadialGradient(32, 32, 2, 32, 32, 32);
+      gradient.addColorStop(0, 'rgba(255, 255, 255, 1)');
+      gradient.addColorStop(0.35, 'rgba(210, 198, 255, 0.95)');
+      gradient.addColorStop(0.7, 'rgba(155, 142, 199, 0.4)');
+      gradient.addColorStop(1, 'rgba(155, 142, 199, 0)');
+      context.fillStyle = gradient;
+      context.beginPath();
+      context.arc(32, 32, 32, 0, Math.PI * 2);
+      context.fill();
+    }
+
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  private onWindowResize() {
+    if (!this.camera || !this.renderer) {
+      return;
+    }
+
+    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+  }
+
+  ngOnDestroy() {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+
+    if (this.animationFrameId) {
+      cancelAnimationFrame(this.animationFrameId);
+    }
+
+    if (this.carouselIntervalId) {
+      clearInterval(this.carouselIntervalId);
+    }
+
+    if (this.renderer) {
+      this.renderer.dispose();
+    }
+
+    window.removeEventListener('resize', this.resizeHandler);
+    this.ctx?.revert();
+  }
+}

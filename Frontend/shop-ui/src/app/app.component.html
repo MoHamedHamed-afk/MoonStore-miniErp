@@ -1,0 +1,72 @@
+<app-toast></app-toast>
+
+<nav *ngIf="shouldShowAppNavbar" class="glass navbar">
+  <div class="container nav-content">
+    <div *ngIf="showWelcome" class="welcome-overlay">
+      {{ translation.t('toast.welcome', { name: currentUser?.username || '' }) }}
+    </div>
+
+    <a class="logo" routerLink="/" (click)="closeMobileMenu()">
+      <span class="logo-moon" aria-hidden="true"></span>
+      <span>{{ translation.t('nav.brand') }}</span>
+    </a>
+
+    <button
+      class="menu-toggle"
+      type="button"
+      [attr.aria-expanded]="isMobileMenuOpen"
+      [attr.aria-label]="translation.t('nav.toggleMenu')"
+      (click)="toggleMobileMenu()">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+
+    <div class="nav-links" [class.open]="isMobileMenuOpen">
+      <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobileMenu()">{{ translation.t('nav.home') }}</a>
+      <a routerLink="/favourites" routerLinkActive="active" (click)="closeMobileMenu()">{{ translation.t('nav.favourites') }}</a>
+      <a routerLink="/cart" routerLinkActive="active" (click)="closeMobileMenu()">{{ translation.t('nav.cart') }}</a>
+
+      <ng-container *ngIf="!currentUser">
+        <a routerLink="/login" class="accent-link" (click)="closeMobileMenu()">{{ translation.t('nav.login') }}</a>
+      </ng-container>
+
+      <ng-container *ngIf="currentUser">
+        <a
+          *ngIf="currentUser.role !== 'Admin'"
+          routerLink="/my-orders"
+          routerLinkActive="active"
+          (click)="closeMobileMenu()">
+          {{ translation.t('nav.myOrders') }}
+        </a>
+        <a
+          *ngIf="currentUser.role === 'Admin'"
+          routerLink="/admin"
+          routerLinkActive="active"
+          class="admin-link"
+          (click)="closeMobileMenu()">
+          {{ translation.t('nav.dashboard') }}
+        </a>
+        <button type="button" class="nav-action logout-link" (click)="logout()">{{ translation.t('nav.logout') }}</button>
+      </ng-container>
+
+      <button
+        type="button"
+        class="nav-action lang-toggle"
+        (click)="translation.toggleLanguage()"
+        [attr.aria-label]="translation.isArabic ? 'Switch language to English' : 'تغيير اللغة إلى العربية'">
+        <span aria-hidden="true">{{ translation.isArabic ? 'EN' : 'AR' }}</span>
+      </button>
+
+      <button
+        type="button"
+        class="nav-action theme-toggle"
+        (click)="toggleTheme()"
+        [attr.aria-label]="isDarkMode ? translation.t('nav.switchToLight') : translation.t('nav.switchToDark')">
+        <span aria-hidden="true">{{ isDarkMode ? '☀' : '☾' }}</span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<router-outlet></router-outlet>
