@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: moonstore-backend
+    runtime: dotnet
+    rootDir: Backend/ShopApi
+    buildCommand: dotnet publish ShopApi.csproj -c Release -o ./publish
+    startCommand: dotnet ./publish/ShopApi.dll
+    healthCheckPath: /health
+    disk:
+      name: moonstore-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: APP_DATA_ROOT
+        value: /var/data
+      - key: FRONTEND_URL
+        sync: false
+      - key: FRONTEND_URLS
+        sync: false
+      - key: Jwt__Key
+        sync: false
+      - key: Jwt__Issuer
+        value: ShopApi
+      - key: Jwt__Audience
+        value: ShopApp

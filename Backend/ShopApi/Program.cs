@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ShopApi.Data;
@@ -10,6 +11,12 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // Configure Database (Railway PostgreSQL or Local SQLite)
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
@@ -42,15 +49,10 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend",
         policy =>
         {
-            var origins = new[]
-            {
-                "http://localhost:4200",
-                builder.Configuration["FRONTEND_URL"]
-            }
-            .Where(origin => !string.IsNullOrWhiteSpace(origin))
-            .Cast<string>()
-            .Distinct()
-            .ToArray();
+            var origins = new[] { "http://localhost:4200" }
+                .Concat(GetConfiguredOrigins(builder.Configuration))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
 
             policy.WithOrigins(origins)
                   .AllowAnyHeader()
@@ -86,6 +88,8 @@ using (var scope = app.Services.CreateScope())
 }
 
 // Configure the HTTP request pipeline.
+app.UseForwardedHeaders();
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
@@ -104,6 +108,19 @@ app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
 app.MapControllers();
 
 app.Run();
+
+static IEnumerable<string> GetConfiguredOrigins(IConfiguration configuration)
+{
+    return new[]
+    {
+        configuration["FRONTEND_URL"],
+        configuration["FRONTEND_URLS"]
+    }
+    .Where(value => !string.IsNullOrWhiteSpace(value))
+    .SelectMany(value => value!.Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+    .Where(value => !string.IsNullOrWhiteSpace(value));
+}
