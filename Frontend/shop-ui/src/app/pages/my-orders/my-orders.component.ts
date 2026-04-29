@@ -70,6 +70,9 @@ import { assetUrl } from '../../core/api.config';
               </div>
 
               <div class="order-actions">
+                <a class="btn whatsapp-btn" [href]="getOrderWhatsAppUrl(order)" target="_blank" rel="noopener">
+                  WhatsApp follow-up
+                </a>
                 <button
                   *ngIf="order.status === 'Pending'"
                   class="btn cancel-btn"
@@ -127,6 +130,7 @@ import { assetUrl } from '../../core/api.config';
     .order-actions { display: flex; gap: 10px; flex-wrap: wrap; }
     .btn { border: none; border-radius: 999px; padding: 11px 18px; font-weight: 700; cursor: pointer; color: #fff; }
     .cancel-btn { background: linear-gradient(135deg, #ff6b6b, #ff4757); }
+    .whatsapp-btn { text-decoration: none; background: linear-gradient(135deg, #25d366, #57d8a3); }
     .return-btn { background: linear-gradient(135deg, #8f7cff, #5f7cff); }
     .empty-state { padding: 30px; text-align: center; }
     .error-state { color: #ff8d99; display: grid; justify-items: center; gap: 14px; }
@@ -230,5 +234,10 @@ export class MyOrdersComponent implements OnInit {
     if (!url) return 'assets/images/placeholder.png';
     if (url.startsWith('http') || url.startsWith('assets/')) return url;
     return assetUrl(url);
+  }
+
+  getOrderWhatsAppUrl(order: Order): string {
+    const message = `Hello Moon Store, I want to follow up on Order #${order.id}. Name: ${order.customerName}. Phone: ${order.phoneNumber || ''}.`;
+    return `https://wa.me/201017827060?text=${encodeURIComponent(message)}`;
   }
 }

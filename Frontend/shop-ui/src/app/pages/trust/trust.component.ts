@@ -22,7 +22,7 @@ import { TranslationService } from '../../services/translation.service';
           </p>
 
           <a class="whatsapp-btn" [href]="whatsappUrl" target="_blank" rel="noopener">
-            {{ translation.isArabic ? 'تواصل واتساب: 01125223260' : 'WhatsApp: 01125223260' }}
+            {{ translation.isArabic ? 'تواصل واتساب: 01017827060' : 'WhatsApp: 01017827060' }}
           </a>
         </header>
 
@@ -114,7 +114,7 @@ import { TranslationService } from '../../services/translation.service';
   `]
 })
 export class TrustComponent {
-  whatsappUrl = 'https://wa.me/201125223260';
+  whatsappUrl = 'https://wa.me/201017827060';
 
   cards = [
     {

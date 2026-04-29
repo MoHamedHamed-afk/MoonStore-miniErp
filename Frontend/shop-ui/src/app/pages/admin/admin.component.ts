@@ -1,8 +1,29 @@
-import { CommonModule } from '@angular/common';
+﻿import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
+import {
+  faArrowRotateRight,
+  faBan,
+  faBoxOpen,
+  faChartLine,
+  faCheck,
+  faCheckCircle,
+  faClipboardList,
+  faDoorOpen,
+  faEdit,
+  faGlobe,
+  faMoon,
+  faSave,
+  faStore,
+  faSun,
+  faTimes,
+  faTrash,
+  faTruckFast,
+  faUserTie
+} from '@fortawesome/free-solid-svg-icons';
 import { AuthService, ModeratorPayload, User } from '../../services/auth.service';
 import { Order, OrderService } from '../../services/order.service';
 import { Product, ProductService, Store } from '../../services/product.service';
@@ -88,6 +109,9 @@ const dashboardLabels = {
     noEmail: 'No email',
     deactivate: 'Deactivate',
     searchProducts: 'Search products',
+    searchOrders: 'Search orders',
+    orderStatus: 'Order status',
+    allStatuses: 'All statuses',
     allStores: 'All stores',
     noProducts: 'No products match your filters.',
     loadingProducts: 'Loading products...',
@@ -109,7 +133,7 @@ const dashboardLabels = {
     moderatorTitle: 'لوحة طلبات الفرع',
     adminTitle: 'تشغيل البيع',
     moderatorSubtitle: 'إدارة الطلبات الخاصة بفرعك فقط بدون الوصول لإعدادات الإدارة العامة.',
-    adminSubtitle: 'لوحة بسيطة لإدارة المنتجات، الطلبات، والمودريتورز حسب الفروع.',
+    adminSubtitle: 'لوحة بسيطة لإدارة المنتجات والطلبات والمودريتورز حسب الفروع.',
     overview: 'نظرة عامة',
     products: 'المنتجات',
     orders: 'الطلبات',
@@ -132,9 +156,9 @@ const dashboardLabels = {
     saveChanges: 'حفظ التعديل',
     cancel: 'إلغاء',
     uncategorized: 'بدون تصنيف',
-    noSizes: 'No sizes',
-    noColors: 'No colors',
-    noStores: 'No stores',
+    noSizes: 'لا توجد مقاسات',
+    noColors: 'لا توجد ألوان',
+    noStores: 'لا توجد فروع',
     edit: 'تعديل',
     delete: 'حذف',
     refresh: 'تحديث',
@@ -147,7 +171,7 @@ const dashboardLabels = {
     pending: 'منتظر',
     accepted: 'مقبول',
     rejected: 'مرفوض',
-    completed: 'تم',
+    completed: 'مكتمل',
     editModerator: 'تعديل مودريتور',
     addModerator: 'إضافة مودريتور',
     username: 'اسم المستخدم',
@@ -161,8 +185,23 @@ const dashboardLabels = {
     saveModerator: 'حفظ المودريتور',
     active: 'نشط',
     inactive: 'غير نشط',
-    noEmail: 'No email',
-    deactivate: 'تعطيل'
+    noEmail: 'لا يوجد بريد',
+    deactivate: 'تعطيل',
+    searchProducts: 'بحث المنتجات',
+    searchOrders: 'بحث الطلبات',
+    orderStatus: 'حالة الطلب',
+    allStatuses: 'كل الحالات',
+    allStores: 'كل الفروع',
+    noProducts: 'لا توجد منتجات مطابقة للفلاتر.',
+    loadingProducts: 'جاري تحميل المنتجات...',
+    loadingOrders: 'جاري تحميل الطلبات...',
+    loadingModerators: 'جاري تحميل المودريتورز...',
+    autoAssignedStore: 'يتم تحديد الفرع تلقائياً حسب توفر المنتج.',
+    moderatorStoreScope: 'أنت ترى طلبات فرعك فقط.',
+    confirmTitle: 'تأكيد الإجراء',
+    confirmDeleteProduct: 'هل تريد حذف هذا المنتج؟ لا يمكن التراجع عن هذا الإجراء.',
+    confirmDeactivateModerator: 'هل تريد تعطيل حساب هذا المودريتور؟',
+    keep: 'إبقاء'
   }
 } as const;
 
@@ -171,7 +210,7 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
 @Component({
   selector: 'app-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, FontAwesomeModule],
   template: `
     <div class="admin-shell">
       <div class="admin-backdrop"></div>
@@ -179,13 +218,13 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
       <nav class="glass dashboard-nav">
         <a routerLink="/" class="brand">Moon Store</a>
         <div class="nav-actions">
-          <button type="button" routerLink="/" class="ghost-btn"><span class="btn-icon">🏬</span>{{ label('shop') }}</button>
+          <button type="button" routerLink="/" class="ghost-btn"><fa-icon class="btn-icon" [icon]="icons.shop"></fa-icon>{{ label('shop') }}</button>
           <button
             type="button"
             class="ghost-btn compact-control"
             (click)="translation.toggleLanguage()"
             [attr.aria-label]="translation.isArabic ? 'Switch language to English' : 'Switch language to Arabic'">
-            <span class="btn-icon">🌐</span>
+            <fa-icon class="btn-icon" [icon]="icons.language"></fa-icon>
             <span>{{ label('languageToggle') }}</span>
           </button>
           <button
@@ -193,10 +232,10 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
             class="ghost-btn compact-control"
             (click)="toggleTheme()"
             [attr.aria-label]="isDarkMode ? label('themeLight') : label('themeDark')">
-            <span class="btn-icon">{{ isDarkMode ? '☀️' : '🌙' }}</span>
+            <fa-icon class="btn-icon" [icon]="isDarkMode ? icons.sun : icons.moon"></fa-icon>
             <span>{{ isDarkMode ? label('themeLight') : label('themeDark') }}</span>
           </button>
-          <button type="button" class="ghost-btn danger" (click)="logout()"><span class="btn-icon">🚪</span>{{ label('logout') }}</button>
+          <button type="button" class="ghost-btn danger" (click)="logout()"><fa-icon class="btn-icon" [icon]="icons.logout"></fa-icon>{{ label('logout') }}</button>
         </div>
       </nav>
 
@@ -219,37 +258,37 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
 
         <section class="tabs" *ngIf="isAdmin">
           <button type="button" [class.active]="activeTab === 'overview'" (click)="setTab('overview')">
-            <span class="nav-icon">📊</span>{{ label('overview') }}
+            <fa-icon class="nav-icon" [icon]="icons.overview"></fa-icon>{{ label('overview') }}
           </button>
           <button type="button" [class.active]="activeTab === 'products'" (click)="setTab('products')">
-            <span class="nav-icon">👕</span>{{ label('products') }}
+            <fa-icon class="nav-icon" [icon]="icons.products"></fa-icon>{{ label('products') }}
           </button>
           <button type="button" [class.active]="activeTab === 'orders'" (click)="setTab('orders')">
-            <span class="nav-icon">🧾</span>{{ label('orders') }}
+            <fa-icon class="nav-icon" [icon]="icons.orders"></fa-icon>{{ label('orders') }}
           </button>
           <button type="button" [class.active]="activeTab === 'moderators'" (click)="setTab('moderators')">
-            <span class="nav-icon">🧑‍💼</span>{{ label('moderators') }}
+            <fa-icon class="nav-icon" [icon]="icons.moderators"></fa-icon>{{ label('moderators') }}
           </button>
         </section>
 
         <section class="glass stats-grid" *ngIf="activeTab === 'overview' && isAdmin">
           <article>
-            <span class="stat-icon">👕</span>
+            <fa-icon class="stat-icon" [icon]="icons.products"></fa-icon>
             <span>{{ label('totalProducts') }}</span>
             <strong>{{ products.length }}</strong>
           </article>
           <article>
-            <span class="stat-icon">⏳</span>
+            <fa-icon class="stat-icon" [icon]="icons.pending"></fa-icon>
             <span>{{ label('pendingOrders') }}</span>
             <strong>{{ countOrders('Pending') }}</strong>
           </article>
           <article>
-            <span class="stat-icon">✅</span>
+            <fa-icon class="stat-icon" [icon]="icons.completed"></fa-icon>
             <span>{{ label('completedOrders') }}</span>
             <strong>{{ countOrders('Completed') }}</strong>
           </article>
           <article>
-            <span class="stat-icon">🏬</span>
+            <fa-icon class="stat-icon" [icon]="icons.shop"></fa-icon>
             <span>{{ label('stores') }}</span>
             <strong>{{ stores.length }}</strong>
           </article>
@@ -257,7 +296,7 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
 
         <section class="panel-grid" *ngIf="activeTab === 'products' && isAdmin">
           <form class="glass editor-card" (ngSubmit)="saveProduct()">
-            <h2><span class="section-icon">👕</span>{{ editingProductId ? label('editProduct') : label('addProduct') }}</h2>
+            <h2><fa-icon class="section-icon" [icon]="icons.products"></fa-icon>{{ editingProductId ? label('editProduct') : label('addProduct') }}</h2>
 
             <label>
               {{ label('productName') }}
@@ -309,14 +348,15 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
 
             <label>
               {{ label('productImage') }}
-              <input type="file" accept="image/*" (change)="uploadImage($event)">
+              <input type="file" accept="image/*" [disabled]="isUploadingImage" (change)="uploadImage($event)">
+              <small *ngIf="isUploadingImage">Uploading image...</small>
             </label>
 
             <img *ngIf="productForm.imageUrl" class="preview-image" [src]="getImgUrl(productForm.imageUrl)" alt="Product preview">
 
             <div class="button-row">
-              <button class="primary-btn" type="submit" [disabled]="isSavingProduct"><span class="btn-icon">💾</span>{{ isSavingProduct ? 'Saving...' : (editingProductId ? label('saveChanges') : label('addProduct')) }}</button>
-              <button class="ghost-btn" type="button" *ngIf="editingProductId" (click)="resetProductForm()"><span class="btn-icon">↩</span>{{ label('cancel') }}</button>
+              <button class="primary-btn" type="submit" [disabled]="isSavingProduct"><fa-icon class="btn-icon" [icon]="icons.save"></fa-icon>{{ isSavingProduct ? 'Saving...' : (editingProductId ? label('saveChanges') : label('addProduct')) }}</button>
+              <button class="ghost-btn" type="button" *ngIf="editingProductId" (click)="resetProductForm()"><fa-icon class="btn-icon" [icon]="icons.cancel"></fa-icon>{{ label('cancel') }}</button>
             </div>
           </form>
 
@@ -353,8 +393,8 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
                 </small>
               </div>
               <div class="row-actions">
-                <button type="button" class="ghost-btn" (click)="editProduct(product)"><span class="btn-icon">✏️</span>{{ label('edit') }}</button>
-                <button type="button" class="ghost-btn danger" [disabled]="isDeletingProduct(product.id)" (click)="deleteProduct(product)"><span class="btn-icon">🗑️</span>{{ isDeletingProduct(product.id) ? 'Deleting...' : label('delete') }}</button>
+                <button type="button" class="ghost-btn" (click)="editProduct(product)"><fa-icon class="btn-icon" [icon]="icons.edit"></fa-icon>{{ label('edit') }}</button>
+                <button type="button" class="ghost-btn danger" [disabled]="isDeletingProduct(product.id)" (click)="deleteProduct(product)"><fa-icon class="btn-icon" [icon]="icons.delete"></fa-icon>{{ isDeletingProduct(product.id) ? 'Deleting...' : label('delete') }}</button>
               </div>
             </article>
 
@@ -367,16 +407,33 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
         <section class="glass orders-panel" *ngIf="activeTab === 'orders'">
           <div class="panel-heading">
             <div>
-              <h2><span class="section-icon">🧾</span>{{ label('orders') }}</h2>
+              <h2><fa-icon class="section-icon" [icon]="icons.orders"></fa-icon>{{ label('orders') }}</h2>
               <p>{{ isModerator ? label('branchOnlyOrders') : label('allOrders') }}</p>
             </div>
-            <button type="button" class="ghost-btn" (click)="loadOrders()"><span class="btn-icon">🔄</span>{{ label('refresh') }}</button>
+            <button type="button" class="ghost-btn" (click)="loadOrders()"><fa-icon class="btn-icon" [icon]="icons.refresh"></fa-icon>{{ label('refresh') }}</button>
+          </div>
+
+          <div class="filter-card" *ngIf="!isModerator">
+            <label>
+              {{ label('searchOrders') }}
+              <input name="orderSearch" [(ngModel)]="orderSearch" placeholder="Name, phone, email, order #">
+            </label>
+            <label>
+              {{ label('orderStatus') }}
+              <select name="orderStatusFilter" [(ngModel)]="orderStatusFilter">
+                <option value="">{{ label('allStatuses') }}</option>
+                <option value="Pending">{{ label('pending') }}</option>
+                <option value="Accepted">{{ label('accepted') }}</option>
+                <option value="Rejected">{{ label('rejected') }}</option>
+                <option value="Completed">{{ label('completed') }}</option>
+              </select>
+            </label>
           </div>
 
           <div class="empty-card" *ngIf="isLoadingOrders">{{ label('loadingOrders') }}</div>
           <div class="empty-card error-card" *ngIf="ordersError">{{ ordersError }}</div>
 
-          <article class="order-card" *ngFor="let order of orders">
+          <article class="order-card" *ngFor="let order of filteredOrders">
             <div class="order-top">
               <div>
                 <h3>Order #{{ order.id }} · {{ order.customerName }}</h3>
@@ -384,7 +441,7 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
                 <p class="hint-line">{{ isModerator ? label('moderatorStoreScope') : label('autoAssignedStore') }}</p>
               </div>
               <span class="status-pill" [ngClass]="statusClass(order.status)">
-                <span class="status-icon">{{ statusIcon(order.status) }}</span>{{ statusLabel(order.status) }}
+                <fa-icon class="status-icon" [icon]="statusIcon(order.status)"></fa-icon>{{ statusLabel(order.status) }}
               </span>
             </div>
 
@@ -410,18 +467,18 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
             </div>
 
             <div class="order-actions">
-              <button type="button" class="accept" [disabled]="order.status === 'Accepted' || isUpdatingOrder(order.id)" (click)="updateOrder(order, 'Accepted')"><span class="btn-icon">👍</span>{{ label('accept') }}</button>
-              <button type="button" class="reject" [disabled]="order.status === 'Rejected' || isUpdatingOrder(order.id)" (click)="updateOrder(order, 'Rejected')"><span class="btn-icon">✖</span>{{ label('reject') }}</button>
-              <button type="button" class="complete" [disabled]="order.status === 'Completed' || isUpdatingOrder(order.id)" (click)="updateOrder(order, 'Completed')"><span class="btn-icon">✅</span>{{ label('completedAction') }}</button>
+              <button type="button" class="accept" [disabled]="order.status === 'Accepted' || isUpdatingOrder(order.id)" (click)="updateOrder(order, 'Accepted')"><fa-icon class="btn-icon" [icon]="icons.accept"></fa-icon>{{ label('accept') }}</button>
+              <button type="button" class="reject" [disabled]="order.status === 'Rejected' || isUpdatingOrder(order.id)" (click)="updateOrder(order, 'Rejected')"><fa-icon class="btn-icon" [icon]="icons.reject"></fa-icon>{{ label('reject') }}</button>
+              <button type="button" class="complete" [disabled]="order.status === 'Completed' || isUpdatingOrder(order.id)" (click)="updateOrder(order, 'Completed')"><fa-icon class="btn-icon" [icon]="icons.completed"></fa-icon>{{ label('completedAction') }}</button>
             </div>
           </article>
 
-          <div class="empty-card" *ngIf="!isLoadingOrders && !ordersError && orders.length === 0">{{ label('noOrders') }}</div>
+          <div class="empty-card" *ngIf="!isLoadingOrders && !ordersError && filteredOrders.length === 0">{{ label('noOrders') }}</div>
         </section>
 
         <section class="panel-grid" *ngIf="activeTab === 'moderators' && isAdmin">
           <form class="glass editor-card" (ngSubmit)="saveModerator()">
-            <h2><span class="section-icon">🧑‍💼</span>{{ editingModeratorId ? label('editModerator') : label('addModerator') }}</h2>
+            <h2><fa-icon class="section-icon" [icon]="icons.moderators"></fa-icon>{{ editingModeratorId ? label('editModerator') : label('addModerator') }}</h2>
 
             <label>
               {{ label('username') }}
@@ -461,8 +518,8 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
             </label>
 
             <div class="button-row">
-              <button class="primary-btn" type="submit"><span class="btn-icon">💾</span>{{ editingModeratorId ? label('saveModerator') : label('addModerator') }}</button>
-              <button class="ghost-btn" type="button" *ngIf="editingModeratorId" (click)="resetModeratorForm()"><span class="btn-icon">↩</span>{{ label('cancel') }}</button>
+              <button class="primary-btn" type="submit"><fa-icon class="btn-icon" [icon]="icons.save"></fa-icon>{{ editingModeratorId ? label('saveModerator') : label('addModerator') }}</button>
+              <button class="ghost-btn" type="button" *ngIf="editingModeratorId" (click)="resetModeratorForm()"><fa-icon class="btn-icon" [icon]="icons.cancel"></fa-icon>{{ label('cancel') }}</button>
             </div>
           </form>
 
@@ -477,8 +534,8 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
                 <small>{{ moderator.isActive === false ? label('inactive') : label('active') }}</small>
               </div>
               <div class="row-actions">
-                <button type="button" class="ghost-btn" (click)="editModerator(moderator)"><span class="btn-icon">✏️</span>{{ label('edit') }}</button>
-                <button type="button" class="ghost-btn danger" (click)="deactivateModerator(moderator)"><span class="btn-icon">🚫</span>{{ label('deactivate') }}</button>
+                <button type="button" class="ghost-btn" (click)="editModerator(moderator)"><fa-icon class="btn-icon" [icon]="icons.edit"></fa-icon>{{ label('edit') }}</button>
+                <button type="button" class="ghost-btn danger" (click)="deactivateModerator(moderator)"><fa-icon class="btn-icon" [icon]="icons.deactivate"></fa-icon>{{ label('deactivate') }}</button>
               </div>
             </article>
           </div>
@@ -497,298 +554,31 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
       </div>
     </div>
   `,
-  styles: [`
-    .admin-shell { min-height: 100vh; position: relative; padding: 24px; overflow: hidden; color: var(--text-color); }
-    .admin-backdrop {
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      background:
-        radial-gradient(circle at 12% 12%, rgba(155, 142, 199, 0.26), transparent 28%),
-        radial-gradient(circle at 82% 16%, rgba(90, 164, 216, 0.18), transparent 24%),
-        linear-gradient(180deg, #05070f 0%, #0b1020 55%, #080b14 100%);
-    }
-    :host-context(body:not(.dark)) .admin-backdrop {
-      background:
-        radial-gradient(circle at 12% 12%, rgba(189, 166, 206, 0.34), transparent 28%),
-        radial-gradient(circle at 82% 16%, rgba(180, 211, 217, 0.42), transparent 24%),
-        linear-gradient(180deg, #fcfbff 0%, #edf3fa 55%, #f4ede5 100%);
-    }
-    .dashboard-nav, .hero-card, .stats-grid, .editor-card, .product-row, .orders-panel, .moderator-row {
-      border-radius: 28px;
-      border: 1px solid var(--glass-border);
-    }
-    .dashboard-nav {
-      max-width: 1180px;
-      margin: 0 auto 22px;
-      padding: 16px 18px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      position: sticky;
-      top: 14px;
-      z-index: 10;
-    }
-    .brand { color: var(--text-color); text-decoration: none; font-weight: 900; letter-spacing: .02em; }
-    .nav-actions, .button-row, .row-actions, .order-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-    .dashboard-container { max-width: 1180px; margin: 0 auto; display: grid; gap: 20px; }
-    .hero-card { padding: clamp(24px, 4vw, 42px); display: flex; justify-content: space-between; align-items: center; gap: 18px; }
-    .hero-card h1 { font-size: clamp(2.2rem, 5vw, 4.6rem); margin: 6px 0 10px; line-height: 1; }
-    .hero-card p { max-width: 680px; line-height: 1.7; opacity: .78; }
-    .eyebrow { text-transform: uppercase; letter-spacing: .18em; color: var(--secondary-accent); font-weight: 800; font-size: .78rem; }
-    .role-pill {
-      min-width: 140px;
-      padding: 16px;
-      border-radius: 22px;
-      background: rgba(255, 255, 255, .08);
-      display: grid;
-      gap: 6px;
-      text-align: center;
-      font-weight: 800;
-    }
-    .tabs { display: flex; gap: 10px; flex-wrap: wrap; }
-    .tabs button, .ghost-btn, .primary-btn, .order-actions button {
-      border: 0;
-      cursor: pointer;
-      border-radius: 999px;
-      padding: 11px 18px;
-      font-weight: 800;
-      color: var(--text-color);
-      background: rgba(255, 255, 255, .08);
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    .tabs button.active, .primary-btn {
-      color: #fff;
-      background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent));
-      box-shadow: 0 18px 38px rgba(112, 89, 192, .25);
-    }
-    .ghost-btn.danger, .danger { color: #ff8d99; }
-    .stats-grid { padding: 20px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-    .stats-grid article {
-      padding: 22px;
-      border-radius: 22px;
-      background: rgba(255, 255, 255, .07);
-      display: grid;
-      gap: 8px;
-    }
-    .stat-icon {
-      width: 42px;
-      height: 42px;
-      display: inline-grid;
-      place-items: center;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, .1);
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08);
-      font-size: 1.35rem;
-      margin-bottom: 6px;
-    }
-    .stats-grid span { opacity: .72; }
-    .stats-grid strong { font-size: 2.2rem; }
-    .panel-grid { display: grid; grid-template-columns: minmax(300px, 390px) 1fr; gap: 20px; align-items: start; }
-    .editor-card { padding: 22px; display: grid; gap: 14px; position: sticky; top: 104px; }
-    .editor-card h2, .orders-panel h2 { margin: 0; font-size: 1.6rem; }
-    .editor-card h2, .orders-panel h2 {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .section-icon {
-      width: 42px;
-      height: 42px;
-      display: inline-grid;
-      place-items: center;
-      flex: 0 0 auto;
-      border-radius: 16px;
-      background: linear-gradient(135deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, .04));
-      font-size: 1.25rem;
-    }
-    .nav-icon, .btn-icon, .status-icon {
-      display: inline-grid;
-      place-items: center;
-      line-height: 1;
-      flex: 0 0 auto;
-    }
-    .compact-control {
-      min-width: 92px;
-    }
-    label { display: grid; gap: 7px; font-weight: 700; }
-    input, textarea, select {
-      width: 100%;
-      padding: 12px 13px;
-      border-radius: 14px;
-      border: 1px solid var(--glass-border);
-      background: rgba(255, 255, 255, .07);
-      color: var(--text-color);
-      outline: none;
-    }
-    textarea { resize: vertical; }
-    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .store-picker { display: flex; flex-wrap: wrap; gap: 9px; align-items: center; }
-    .store-picker > span { width: 100%; font-weight: 800; }
-    .checkbox-pill, .inline-check {
-      display: flex;
-      grid-auto-flow: column;
-      align-items: center;
-      gap: 8px;
-      width: auto;
-      padding: 10px 12px;
-      border-radius: 999px;
-      background: rgba(255, 255, 255, .07);
-      font-weight: 700;
-    }
-    .checkbox-pill input, .inline-check input { width: auto; }
-    .preview-image {
-      width: 100%;
-      max-height: 190px;
-      object-fit: contain;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, .07);
-      padding: 12px;
-    }
-    .list-stack { display: grid; gap: 14px; }
-    .filter-card {
-      padding: 16px;
-      display: grid;
-      grid-template-columns: minmax(180px, 1fr) minmax(160px, 220px);
-      gap: 12px;
-      align-items: end;
-    }
-    .product-row, .moderator-row {
-      padding: 16px;
-      display: grid;
-      grid-template-columns: 76px 1fr auto;
-      gap: 14px;
-      align-items: center;
-    }
-    .moderator-row { grid-template-columns: 1fr auto; }
-    .product-row img {
-      width: 76px;
-      height: 76px;
-      object-fit: contain;
-      border-radius: 18px;
-      background: rgba(255, 255, 255, .07);
-      padding: 8px;
-    }
-    .product-row h3, .moderator-row h3 { margin: 0 0 6px; }
-    .product-row p, .moderator-row p, .panel-heading p, .order-top p { margin: 0; opacity: .76; }
-    .product-row small, .moderator-row small { opacity: .64; }
-    .orders-panel { padding: 22px; display: grid; gap: 16px; }
-    .panel-heading, .order-top, .order-bottom {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      align-items: flex-start;
-    }
-    .order-card {
-      padding: 18px;
-      border-radius: 24px;
-      background: rgba(255, 255, 255, .065);
-      display: grid;
-      gap: 14px;
-    }
-    .order-top h3 { margin: 0 0 6px; }
-    .status-pill {
-      padding: 8px 12px;
-      border-radius: 999px;
-      font-weight: 900;
-      white-space: nowrap;
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-    }
-    .status-pending { color: #f1c40f; background: rgba(241, 196, 15, .16); }
-    .status-accepted { color: #4ea6db; background: rgba(52, 152, 219, .16); }
-    .status-rejected { color: #ff6b6b; background: rgba(255, 107, 107, .16); }
-    .status-completed { color: #44d486; background: rgba(46, 204, 113, .16); }
-    .order-items { display: grid; gap: 8px; }
-    .order-items div {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 10px 12px;
-      border-radius: 16px;
-      background: rgba(255, 255, 255, .055);
-    }
-    .order-items span, .order-bottom span { opacity: .74; }
-    .order-actions button { color: #fff; }
-    .tabs button:disabled, .ghost-btn:disabled, .primary-btn:disabled, .order-actions button:disabled {
-      opacity: .45;
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-    }
-    .accept { background: linear-gradient(135deg, #4ea6db, #5f7cff) !important; }
-    .reject { background: linear-gradient(135deg, #ff6b6b, #ff4757) !important; }
-    .complete { background: linear-gradient(135deg, #2ecc71, #57d8a3) !important; }
-    .empty-card { padding: 24px; text-align: center; opacity: .72; }
-    .error-card { color: #ff8d99; opacity: 1; }
-    .hint-line {
-      color: var(--secondary-accent);
-      font-size: .86rem;
-      margin-top: 4px !important;
-      opacity: .9 !important;
-    }
-    .confirm-backdrop {
-      position: fixed;
-      inset: 0;
-      z-index: 80;
-      display: grid;
-      place-items: center;
-      padding: 20px;
-      background: rgba(0, 0, 0, .48);
-      backdrop-filter: blur(10px);
-    }
-    .confirm-card {
-      width: min(420px, 100%);
-      padding: 24px;
-      border-radius: 24px;
-      display: grid;
-      gap: 14px;
-    }
-    .confirm-card h3, .confirm-card p { margin: 0; }
-    @media (max-width: 900px) {
-      .admin-shell { padding: 14px; }
-      .hero-card, .panel-heading, .order-top, .order-bottom { flex-direction: column; }
-      .stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .panel-grid { grid-template-columns: 1fr; }
-      .editor-card { position: static; }
-      .product-row { grid-template-columns: 70px 1fr; }
-      .product-row .row-actions { grid-column: 1 / -1; }
-    }
-    @media (max-width: 560px) {
-      .admin-shell { padding: 10px; overflow: visible; }
-      .dashboard-nav { align-items: flex-start; flex-direction: column; padding: 12px; border-radius: 22px; }
-      .hero-card { padding: 18px; }
-      .hero-card h1 { font-size: clamp(2rem, 12vw, 2.55rem); overflow-wrap: anywhere; }
-      .role-pill { width: 100%; align-items: flex-start; }
-      .tabs { position: sticky; top: 8px; z-index: 20; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; }
-      .tabs button { min-height: 46px; justify-content: center; padding: 10px; }
-      .stats-grid strong { font-size: 1.85rem; }
-      .editor-card, .orders-panel { padding: 16px; }
-      .editor-card h2, .orders-panel h2 { font-size: 1.35rem; }
-      .form-row, .stats-grid, .filter-card { grid-template-columns: 1fr; }
-      .product-row, .moderator-row { grid-template-columns: 1fr; }
-      .product-row img { width: 100%; height: 160px; }
-      .order-items div { flex-direction: column; }
-      .nav-actions, .button-row, .row-actions, .order-actions, .tabs { width: 100%; }
-      .nav-actions button, .button-row button, .row-actions button, .order-actions button, .tabs button { flex: 1; min-height: 46px; }
-      .nav-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-      .nav-actions .danger { grid-column: 1 / -1; }
-      .button-row, .row-actions, .order-actions { display: grid; grid-template-columns: 1fr; }
-      .order-card { padding: 14px; border-radius: 20px; }
-      .order-bottom { gap: 10px; }
-      .order-bottom span, .order-items span, .product-row p, .product-row small, .moderator-row p { overflow-wrap: anywhere; }
-      input, textarea, select { min-height: 46px; font-size: 16px; }
-      .store-picker { gap: 8px; }
-      .checkbox-pill, .inline-check { min-height: 42px; }
-      .confirm-card { padding: 18px; }
-    }
-  `]
+  styleUrl: './admin.component.scss'
 })
 export class AdminComponent implements OnInit {
+  icons = {
+    accept: faCheck,
+    cancel: faTimes,
+    completed: faCheckCircle,
+    deactivate: faBan,
+    delete: faTrash,
+    edit: faEdit,
+    language: faGlobe,
+    logout: faDoorOpen,
+    moderators: faUserTie,
+    moon: faMoon,
+    orders: faClipboardList,
+    overview: faChartLine,
+    pending: faTruckFast,
+    products: faBoxOpen,
+    refresh: faArrowRotateRight,
+    reject: faTimes,
+    save: faSave,
+    shop: faStore,
+    sun: faSun
+  };
+
   currentUser: User | null = null;
   isDarkMode = true;
   activeTab: DashboardTab = 'overview';
@@ -798,10 +588,13 @@ export class AdminComponent implements OnInit {
   moderators: ModeratorAccount[] = [];
   productSearch = '';
   productStoreFilter = 0;
+  orderSearch = '';
+  orderStatusFilter = '';
   isLoadingProducts = false;
   isLoadingOrders = false;
   isLoadingModerators = false;
   isSavingProduct = false;
+  isUploadingImage = false;
   deletingProductIds = new Set<number>();
   updatingOrderIds = new Set<number>();
   productsError = '';
@@ -869,6 +662,26 @@ export class AdminComponent implements OnInit {
       const matchesStore = !selectedStoreId || (product.availableStoreIds || []).includes(selectedStoreId);
 
       return matchesSearch && matchesStore;
+    });
+  }
+
+  get filteredOrders(): Order[] {
+    const query = this.orderSearch.trim().toLowerCase();
+    const status = this.orderStatusFilter;
+
+    return this.orders.filter(order => {
+      const matchesStatus = !status || order.status === status;
+      const haystack = [
+        order.id,
+        order.customerName,
+        order.email,
+        order.phoneNumber,
+        order.address,
+        order.storeName,
+        order.status
+      ].filter(Boolean).join(' ').toLowerCase();
+
+      return matchesStatus && (!query || haystack.includes(query));
     });
   }
 
@@ -1010,11 +823,19 @@ export class AdminComponent implements OnInit {
     const formData = new FormData();
     formData.append('file', file);
 
+    this.isUploadingImage = true;
     this.http.post<{ Url?: string; url?: string }>(apiUrl('/api/uploads'), formData, {
       headers: { Authorization: `Bearer ${this.authService.getToken()}` }
     }).subscribe({
-      next: response => this.productForm.imageUrl = response.Url || response.url || this.productForm.imageUrl,
-      error: () => this.toastService.show('Could not upload image.', 'error')
+      next: response => {
+        this.productForm.imageUrl = response.Url || response.url || this.productForm.imageUrl;
+        this.isUploadingImage = false;
+        this.toastService.show('Image uploaded.', 'success');
+      },
+      error: () => {
+        this.isUploadingImage = false;
+        this.toastService.show('Could not upload image.', 'error');
+      }
     });
   }
 
@@ -1138,14 +959,14 @@ export class AdminComponent implements OnInit {
     return statusLabels[status] ? this.label(statusLabels[status]) : status;
   }
 
-  statusIcon(status: string): string {
-    const icons: Record<string, string> = {
-      Pending: '⏳',
-      Accepted: '👍',
-      Rejected: '✖',
-      Completed: '✅'
+  statusIcon(status: string) {
+    const icons = {
+      Pending: this.icons.pending,
+      Accepted: this.icons.accept,
+      Rejected: this.icons.reject,
+      Completed: this.icons.completed
     };
-    return icons[status] || '•';
+    return icons[status as keyof typeof icons] || this.icons.orders;
   }
 
   formatPaymentMethod(paymentMethod?: string): string {

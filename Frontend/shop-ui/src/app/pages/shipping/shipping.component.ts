@@ -151,6 +151,9 @@ import * as THREE from 'three';
           <div *ngIf="success" class="success-state">
             <h3>{{ translation.t('shipping.successTitle') }}</h3>
             <p>{{ translation.t('shipping.successText') }}</p>
+            <a class="btn whatsapp-followup" [href]="whatsappFollowUpUrl" target="_blank" rel="noopener">
+              Follow up on WhatsApp
+            </a>
             <button class="btn" (click)="goHome()">{{ translation.t('shipping.returnToStore') }}</button>
           </div>
         </section>
@@ -376,6 +379,13 @@ import * as THREE from 'three';
     .success-state { text-align: center; padding: 40px 0 10px; }
     .success-state h3 { font-size: 2rem; margin-bottom: 12px; color: #51cf66; }
     .success-state p { margin-bottom: 24px; }
+    .whatsapp-followup {
+      display: inline-flex;
+      justify-content: center;
+      margin: 0 10px 12px 0;
+      text-decoration: none;
+      background: linear-gradient(135deg, #25d366, #57d8a3);
+    }
     @keyframes orbitDrift {
       0% { transform: rotate(0deg) translate3d(0, 0, 0) scale(1); }
       20% { transform: rotate(68deg) translate3d(40px, -18px, 0) scale(1.05); }
@@ -455,6 +465,7 @@ export class ShippingComponent implements AfterViewInit, OnDestroy {
   success = false;
   cartItems: CartItem[] = [];
   isSubmitting = false;
+  submittedOrderId?: number;
 
   private renderer!: THREE.WebGLRenderer;
   private scene!: THREE.Scene;
@@ -542,7 +553,8 @@ export class ShippingComponent implements AfterViewInit, OnDestroy {
         selectedColor: item.selectedColor
       }))
     }).subscribe({
-      next: () => {
+      next: response => {
+        this.submittedOrderId = this.extractOrderId(response);
         this.cartService.clearCart().subscribe({
           next: () => {
             this.success = true;
@@ -569,6 +581,25 @@ export class ShippingComponent implements AfterViewInit, OnDestroy {
 
   getImgUrl(url: string | undefined): string {
     return assetUrl(url);
+  }
+
+  get whatsappFollowUpUrl(): string {
+    const orderRef = this.submittedOrderId ? `Order #${this.submittedOrderId}` : 'my Moon Store order';
+    const message = `Hello Moon Store, I want to follow up on ${orderRef}. Name: ${this.form.name}. Phone: ${this.form.phone}.`;
+    return `https://wa.me/201017827060?text=${encodeURIComponent(message)}`;
+  }
+
+  private extractOrderId(response: unknown): number | undefined {
+    if (Array.isArray(response)) {
+      return response[0]?.id;
+    }
+
+    if (typeof response === 'object' && response && 'id' in response) {
+      const id = (response as { id?: unknown }).id;
+      return typeof id === 'number' ? id : undefined;
+    }
+
+    return undefined;
   }
 
   private getOrderError(error: unknown): string {
