@@ -6,7 +6,7 @@ const scriptDir = dirname(fileURLToPath(import.meta.url));
 const projectRoot = resolve(scriptDir, '..');
 const targetFile = resolve(projectRoot, 'src/environments/environment.production.ts');
 const configuredApiUrl = process.env.API_BASE_URL?.trim();
-const apiBaseUrl = configuredApiUrl || 'https://your-render-backend.onrender.com';
+const apiBaseUrl = configuredApiUrl || 'https://moonstore-backend-free.onrender.com';
 
 const fileContents = `export const environment = {
   production: true,
