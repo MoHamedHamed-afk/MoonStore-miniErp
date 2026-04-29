@@ -23,6 +23,12 @@ import { assetUrl } from '../../core/api.config';
         </section>
 
         <section class="orders-list">
+          <div class="glass empty-state" *ngIf="isLoading">Loading your orders...</div>
+          <div class="glass empty-state error-state" *ngIf="ordersError">
+            {{ ordersError }}
+            <button type="button" class="btn retry-btn" (click)="loadOrders()">Retry</button>
+          </div>
+
           <div class="glass order-card" *ngFor="let order of orders">
             <div class="order-header">
               <div>
@@ -57,6 +63,8 @@ import { assetUrl } from '../../core/api.config';
             <div class="order-footer">
               <div class="order-meta">
                 <span>{{ order.storeName || ('Store #' + order.storeId) }}</span>
+                <span *ngIf="order.phoneNumber">{{ order.phoneNumber }}</span>
+                <span *ngIf="order.paymentMethod">{{ formatPaymentMethod(order.paymentMethod) }}</span>
                 <span>{{ order.address }}</span>
                 <strong>\${{ order.totalAmount }}</strong>
               </div>
@@ -72,7 +80,7 @@ import { assetUrl } from '../../core/api.config';
             </div>
           </div>
 
-          <div class="glass empty-state" *ngIf="orders.length === 0">
+          <div class="glass empty-state" *ngIf="!isLoading && !ordersError && orders.length === 0">
             {{ translation.t('myOrders.empty') }}
           </div>
         </section>
@@ -121,6 +129,8 @@ import { assetUrl } from '../../core/api.config';
     .cancel-btn { background: linear-gradient(135deg, #ff6b6b, #ff4757); }
     .return-btn { background: linear-gradient(135deg, #8f7cff, #5f7cff); }
     .empty-state { padding: 30px; text-align: center; }
+    .error-state { color: #ff8d99; display: grid; justify-items: center; gap: 14px; }
+    .retry-btn { background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent)); }
     @media (max-width: 640px) {
       .orders-shell { padding-top: 96px; }
       .order-header, .order-footer { flex-direction: column; align-items: flex-start; }
@@ -131,6 +141,8 @@ import { assetUrl } from '../../core/api.config';
 })
 export class MyOrdersComponent implements OnInit {
   orders: Order[] = [];
+  isLoading = false;
+  ordersError = '';
 
   constructor(
     private authService: AuthService,
@@ -150,7 +162,18 @@ export class MyOrdersComponent implements OnInit {
   }
 
   loadOrders() {
-    this.orderService.getMyOrders().subscribe(data => this.orders = data);
+    this.isLoading = true;
+    this.ordersError = '';
+    this.orderService.getMyOrders().subscribe({
+      next: data => {
+        this.orders = data;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.ordersError = 'Could not load your orders. Please try again.';
+        this.isLoading = false;
+      }
+    });
   }
 
   cancelOrder(id: number) {
@@ -181,6 +204,14 @@ export class MyOrdersComponent implements OnInit {
       Completed: 'Completed'
     };
     return labels[status] || status;
+  }
+
+  formatPaymentMethod(paymentMethod?: string): string {
+    if (!paymentMethod || paymentMethod === 'CashOnDelivery') {
+      return 'Cash on delivery';
+    }
+
+    return paymentMethod;
   }
 
   getImgUrl(url: string | undefined): string {

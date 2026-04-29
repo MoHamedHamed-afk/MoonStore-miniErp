@@ -33,6 +33,7 @@
 
     <div class="nav-links" [class.open]="isMobileMenuOpen">
       <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobileMenu()">{{ translation.t('nav.home') }}</a>
+      <a routerLink="/trust" routerLinkActive="active" (click)="closeMobileMenu()">{{ translation.isArabic ? 'الدعم' : 'Support' }}</a>
       <a routerLink="/favourites" routerLinkActive="active" (click)="closeMobileMenu()">{{ translation.t('nav.favourites') }}</a>
       <a routerLink="/cart" routerLinkActive="active" (click)="closeMobileMenu()">{{ translation.t('nav.cart') }}</a>
 

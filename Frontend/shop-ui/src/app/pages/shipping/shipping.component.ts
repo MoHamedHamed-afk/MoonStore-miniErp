@@ -47,6 +47,11 @@ import * as THREE from 'three';
         <section class="glass shipping-card">
           <h2>{{ translation.t('shipping.heading') }}</h2>
 
+          <div class="payment-note" *ngIf="!success">
+            <strong>Cash on delivery</strong>
+            <span>No online card payment is required now. The shop will manually confirm your order and collect payment on delivery.</span>
+          </div>
+
           <form #shippingForm="ngForm" (ngSubmit)="onSubmit(shippingForm)" *ngIf="!success" novalidate>
             <div class="form-grid">
               <div class="field full">
@@ -285,6 +290,17 @@ import * as THREE from 'three';
     .visual-copy p { line-height: 1.6; opacity: 0.92; }
     .shipping-card { padding: 34px; }
     .shipping-card h2 { font-size: 2rem; margin-bottom: 24px; }
+    .payment-note {
+      display: grid;
+      gap: 6px;
+      margin: -8px 0 22px;
+      padding: 16px 18px;
+      border-radius: 18px;
+      border: 1px solid rgba(87, 216, 163, .3);
+      background: rgba(87, 216, 163, .1);
+    }
+    .payment-note strong { color: #57d8a3; }
+    .payment-note span { opacity: .82; line-height: 1.5; }
     .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
     .field { display: flex; flex-direction: column; gap: 8px; }
     .field.full { grid-column: 1 / -1; }
@@ -483,14 +499,15 @@ export class ShippingComponent implements AfterViewInit, OnDestroy {
       this.form.address,
       `${this.form.area}, ${this.form.city}`,
       `Apt/Building: ${this.form.apartment}`,
-      `Postal Code: ${this.form.postalCode}`,
-      `Phone: ${this.form.phone}`
+      `Postal Code: ${this.form.postalCode}`
     ].join(' | ');
 
     this.orderService.createOrder({
       customerName: this.form.name,
       email: this.form.email,
+      phoneNumber: this.form.phone,
       address: fullAddress,
+      paymentMethod: 'CashOnDelivery',
       storeId: 0,
       items: this.cartItems.map(item => ({
         productId: item.productId,

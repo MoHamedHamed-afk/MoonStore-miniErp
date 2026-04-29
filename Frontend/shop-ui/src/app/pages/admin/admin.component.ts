@@ -315,7 +315,7 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
             <img *ngIf="productForm.imageUrl" class="preview-image" [src]="getImgUrl(productForm.imageUrl)" alt="Product preview">
 
             <div class="button-row">
-              <button class="primary-btn" type="submit"><span class="btn-icon">💾</span>{{ editingProductId ? label('saveChanges') : label('addProduct') }}</button>
+              <button class="primary-btn" type="submit" [disabled]="isSavingProduct"><span class="btn-icon">💾</span>{{ isSavingProduct ? 'Saving...' : (editingProductId ? label('saveChanges') : label('addProduct')) }}</button>
               <button class="ghost-btn" type="button" *ngIf="editingProductId" (click)="resetProductForm()"><span class="btn-icon">↩</span>{{ label('cancel') }}</button>
             </div>
           </form>
@@ -354,7 +354,7 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
               </div>
               <div class="row-actions">
                 <button type="button" class="ghost-btn" (click)="editProduct(product)"><span class="btn-icon">✏️</span>{{ label('edit') }}</button>
-                <button type="button" class="ghost-btn danger" (click)="deleteProduct(product)"><span class="btn-icon">🗑️</span>{{ label('delete') }}</button>
+                <button type="button" class="ghost-btn danger" [disabled]="isDeletingProduct(product.id)" (click)="deleteProduct(product)"><span class="btn-icon">🗑️</span>{{ isDeletingProduct(product.id) ? 'Deleting...' : label('delete') }}</button>
               </div>
             </article>
 
@@ -400,14 +400,19 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
             </div>
 
             <div class="order-bottom">
-              <span>{{ order.email }} · {{ order.address }}</span>
+              <span>
+                {{ order.email }}
+                <ng-container *ngIf="order.phoneNumber"> · {{ order.phoneNumber }}</ng-container>
+                · {{ order.address }}
+                <ng-container *ngIf="order.paymentMethod"> · {{ formatPaymentMethod(order.paymentMethod) }}</ng-container>
+              </span>
               <strong>\${{ order.totalAmount }}</strong>
             </div>
 
             <div class="order-actions">
-              <button type="button" class="accept" [disabled]="order.status === 'Accepted'" (click)="updateOrder(order, 'Accepted')"><span class="btn-icon">👍</span>{{ label('accept') }}</button>
-              <button type="button" class="reject" [disabled]="order.status === 'Rejected'" (click)="updateOrder(order, 'Rejected')"><span class="btn-icon">✖</span>{{ label('reject') }}</button>
-              <button type="button" class="complete" [disabled]="order.status === 'Completed'" (click)="updateOrder(order, 'Completed')"><span class="btn-icon">✅</span>{{ label('completedAction') }}</button>
+              <button type="button" class="accept" [disabled]="order.status === 'Accepted' || isUpdatingOrder(order.id)" (click)="updateOrder(order, 'Accepted')"><span class="btn-icon">👍</span>{{ label('accept') }}</button>
+              <button type="button" class="reject" [disabled]="order.status === 'Rejected' || isUpdatingOrder(order.id)" (click)="updateOrder(order, 'Rejected')"><span class="btn-icon">✖</span>{{ label('reject') }}</button>
+              <button type="button" class="complete" [disabled]="order.status === 'Completed' || isUpdatingOrder(order.id)" (click)="updateOrder(order, 'Completed')"><span class="btn-icon">✅</span>{{ label('completedAction') }}</button>
             </div>
           </article>
 
@@ -709,7 +714,12 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
     }
     .order-items span, .order-bottom span { opacity: .74; }
     .order-actions button { color: #fff; }
-    .order-actions button:disabled { opacity: .45; cursor: not-allowed; }
+    .tabs button:disabled, .ghost-btn:disabled, .primary-btn:disabled, .order-actions button:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
     .accept { background: linear-gradient(135deg, #4ea6db, #5f7cff) !important; }
     .reject { background: linear-gradient(135deg, #ff6b6b, #ff4757) !important; }
     .complete { background: linear-gradient(135deg, #2ecc71, #57d8a3) !important; }
@@ -772,6 +782,9 @@ export class AdminComponent implements OnInit {
   isLoadingProducts = false;
   isLoadingOrders = false;
   isLoadingModerators = false;
+  isSavingProduct = false;
+  deletingProductIds = new Set<number>();
+  updatingOrderIds = new Set<number>();
   productsError = '';
   ordersError = '';
   moderatorsError = '';
@@ -920,13 +933,18 @@ export class AdminComponent implements OnInit {
       ? this.productService.updateProduct(this.editingProductId, payload)
       : this.productService.createProduct(payload);
 
+    this.isSavingProduct = true;
     request.subscribe({
       next: () => {
         this.toastService.show(this.editingProductId ? 'Product updated.' : 'Product added.', 'success');
         this.resetProductForm();
         this.loadProducts();
+        this.isSavingProduct = false;
       },
-      error: () => this.toastService.show('Could not save product.', 'error')
+      error: () => {
+        this.isSavingProduct = false;
+        this.toastService.show('Could not save product.', 'error');
+      }
     });
   }
 
@@ -948,12 +966,17 @@ export class AdminComponent implements OnInit {
     }
 
     this.openConfirm(this.label('confirmDeleteProduct'), this.label('delete'), () => {
+      this.deletingProductIds.add(product.id!);
       this.productService.deleteProduct(product.id!).subscribe({
         next: () => {
           this.toastService.show('Product deleted.', 'success');
           this.loadProducts();
+          this.deletingProductIds.delete(product.id!);
         },
-        error: () => this.toastService.show('Could not delete product.', 'error')
+        error: () => {
+          this.deletingProductIds.delete(product.id!);
+          this.toastService.show('Could not delete product.', 'error');
+        }
       });
     });
   }
@@ -988,12 +1011,17 @@ export class AdminComponent implements OnInit {
       return;
     }
 
+    this.updatingOrderIds.add(order.id);
     this.orderService.updateOrderStatus(order.id, status).subscribe({
       next: () => {
         this.toastService.show('Order updated.', 'success');
         this.loadOrders();
+        this.updatingOrderIds.delete(order.id!);
       },
-      error: () => this.toastService.show('Could not update order.', 'error')
+      error: () => {
+        this.updatingOrderIds.delete(order.id!);
+        this.toastService.show('Could not update order.', 'error');
+      }
     });
   }
 
@@ -1069,6 +1097,14 @@ export class AdminComponent implements OnInit {
     return this.orders.filter(order => order.status === status).length;
   }
 
+  isDeletingProduct(productId?: number): boolean {
+    return !!productId && this.deletingProductIds.has(productId);
+  }
+
+  isUpdatingOrder(orderId?: number): boolean {
+    return !!orderId && this.updatingOrderIds.has(orderId);
+  }
+
   statusClass(status: string): string {
     return `status-${status.toLowerCase()}`;
   }
@@ -1091,6 +1127,14 @@ export class AdminComponent implements OnInit {
       Completed: '✅'
     };
     return icons[status] || '•';
+  }
+
+  formatPaymentMethod(paymentMethod?: string): string {
+    if (!paymentMethod || paymentMethod === 'CashOnDelivery') {
+      return 'Cash on delivery';
+    }
+
+    return paymentMethod;
   }
 
   getImgUrl(url: string | undefined): string {

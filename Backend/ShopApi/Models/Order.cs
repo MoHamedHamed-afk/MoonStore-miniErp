@@ -8,7 +8,9 @@ public class Order
     public int? UserId { get; set; }
     public string CustomerName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
+    public string PaymentMethod { get; set; } = "CashOnDelivery";
     public int StoreId { get; set; } = 1;
     public string StoreName { get; set; } = "Store 1";
     public decimal TotalAmount { get; set; }
@@ -36,7 +38,9 @@ public class CreateOrderRequest
 {
     public string CustomerName { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
     public string Address { get; set; } = string.Empty;
+    public string PaymentMethod { get; set; } = "CashOnDelivery";
     public int StoreId { get; set; } = 1;
     public List<CreateOrderItemRequest> Items { get; set; } = [];
 }

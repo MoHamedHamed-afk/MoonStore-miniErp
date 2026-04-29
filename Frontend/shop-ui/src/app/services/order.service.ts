@@ -21,7 +21,9 @@ export interface Order {
   userId?: number | null;
   customerName: string;
   email: string;
+  phoneNumber?: string;
   address: string;
+  paymentMethod?: string;
   storeId: number;
   storeName: string;
   totalAmount: number;
@@ -33,7 +35,9 @@ export interface Order {
 export interface CreateOrderPayload {
   customerName: string;
   email: string;
+  phoneNumber: string;
   address: string;
+  paymentMethod: string;
   storeId: number;
   items: Array<{
     productId: number;

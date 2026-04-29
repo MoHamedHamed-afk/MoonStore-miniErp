@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ShopApi.Data;
 using Microsoft.Extensions.FileProviders;
+using ShopApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 var renderPort = builder.Configuration["PORT"];
@@ -15,6 +16,7 @@ if (!string.IsNullOrWhiteSpace(renderPort))
 
 // Add services to the container.
 builder.Services.AddControllers();
+builder.Services.AddHttpClient<CloudinaryImageUploader>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {

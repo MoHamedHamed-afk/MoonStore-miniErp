@@ -16,11 +16,17 @@ import { assetUrl } from '../../core/api.config';
     <div class="container" style="padding-top: 120px; min-height: 100vh;">
       <h1 style="font-size: 3rem; margin-bottom: 40px; text-align: center;">{{ translation.t('favourites.title') }}</h1>
 
-      <div *ngIf="favorites.length === 0" style="text-align: center; opacity: 0.7;">
+      <div class="glass" *ngIf="isLoading" style="padding: 22px; border-radius: 16px; text-align: center;">Loading favourites...</div>
+      <div class="glass" *ngIf="favoritesError" style="padding: 22px; border-radius: 16px; text-align: center; color: #ff8d99;">
+        {{ favoritesError }}
+        <button type="button" class="btn" style="margin-left: 12px; padding: 8px 16px;" (click)="loadFavorites()">Retry</button>
+      </div>
+
+      <div *ngIf="!isLoading && !favoritesError && favorites.length === 0" style="text-align: center; opacity: 0.7;">
         <p>{{ translation.t('favourites.empty') }}</p>
       </div>
 
-      <div class="product-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px;">
+      <div class="product-grid" *ngIf="!isLoading && !favoritesError" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px;">
         <div class="product-card glass" *ngFor="let fav of favorites; trackBy: trackByFavoriteId" style="padding: 20px; border-radius: 24px;">
           <div class="image-wrapper" style="width: 100%; height: 250px; overflow: hidden; border-radius: 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center;">
             <img [src]="getImgUrl(fav.product?.imageUrl)" [alt]="fav.product?.name || 'Favorite product'" loading="lazy" decoding="async" style="max-height: 100%; max-width: 100%; object-fit: contain;">
@@ -40,6 +46,8 @@ import { assetUrl } from '../../core/api.config';
 })
 export class FavouritesComponent implements OnInit {
   favorites: Favorite[] = [];
+  isLoading = false;
+  favoritesError = '';
 
   constructor(
     private authService: AuthService,
@@ -60,7 +68,18 @@ export class FavouritesComponent implements OnInit {
   }
 
   loadFavorites() {
-    this.favService.getFavorites().subscribe(data => this.favorites = data);
+    this.isLoading = true;
+    this.favoritesError = '';
+    this.favService.getFavorites().subscribe({
+      next: data => {
+        this.favorites = data;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.favoritesError = 'Could not load favourites. Please try again.';
+        this.isLoading = false;
+      }
+    });
   }
 
   getImgUrl(url: string | undefined): string {
@@ -70,7 +89,10 @@ export class FavouritesComponent implements OnInit {
   }
 
   removeFav(productId: number) {
-    this.favService.removeFavorite(productId).subscribe(() => this.loadFavorites());
+    this.favService.removeFavorite(productId).subscribe({
+      next: () => this.loadFavorites(),
+      error: () => this.toastService.show('Could not remove this favourite.', 'error')
+    });
   }
 
   addToCart(productId: number) {

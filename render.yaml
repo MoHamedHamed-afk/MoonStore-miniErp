@@ -12,6 +12,14 @@ services:
         value: /tmp/moonstore-data/shop.db
       - key: UPLOADS_PATH
         value: /tmp/moonstore-data/uploads
+      - key: Cloudinary__CloudName
+        sync: false
+      - key: Cloudinary__ApiKey
+        sync: false
+      - key: Cloudinary__ApiSecret
+        sync: false
+      - key: Cloudinary__Folder
+        value: moon-store/products
       - key: FRONTEND_URL
         sync: false
       - key: FRONTEND_URLS

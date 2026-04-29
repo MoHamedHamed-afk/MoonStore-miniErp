@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ShopApi.Data;
+using ShopApi.Services;
 
 namespace ShopApi.Controllers;
 
@@ -19,16 +20,21 @@ public class UploadsController : ControllerBase
 
     private readonly IWebHostEnvironment _environment;
     private readonly IConfiguration _configuration;
+    private readonly CloudinaryImageUploader _cloudinaryImageUploader;
 
-    public UploadsController(IWebHostEnvironment environment, IConfiguration configuration)
+    public UploadsController(
+        IWebHostEnvironment environment,
+        IConfiguration configuration,
+        CloudinaryImageUploader cloudinaryImageUploader)
     {
         _environment = environment;
         _configuration = configuration;
+        _cloudinaryImageUploader = cloudinaryImageUploader;
     }
 
     [HttpPost]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Upload(IFormFile file)
+    public async Task<IActionResult> Upload(IFormFile file, CancellationToken cancellationToken)
     {
         if (file == null || file.Length == 0)
             return BadRequest("No file uploaded");
@@ -38,6 +44,12 @@ public class UploadsController : ControllerBase
 
         if (!AllowedImageTypes.TryGetValue(file.ContentType, out var safeExtension))
             return BadRequest("Unsupported image type. Please upload JPG, PNG, WebP, or GIF.");
+
+        if (_cloudinaryImageUploader.IsConfigured)
+        {
+            var cloudinaryUrl = await _cloudinaryImageUploader.UploadAsync(file, cancellationToken);
+            return Ok(new { Url = cloudinaryUrl, Provider = "cloudinary" });
+        }
 
         var uploadsFolder = AppPaths.ResolveUploadsPath(_environment, _configuration);
         Directory.CreateDirectory(uploadsFolder);

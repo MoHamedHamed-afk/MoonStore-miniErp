@@ -28,6 +28,14 @@ services:
         value: /tmp/moonstore-data/shop.db
       - key: UPLOADS_PATH
         value: /tmp/moonstore-data/uploads
+      - key: Cloudinary__CloudName
+        sync: false
+      - key: Cloudinary__ApiKey
+        sync: false
+      - key: Cloudinary__ApiSecret
+        sync: false
+      - key: Cloudinary__Folder
+        value: moon-store/products
       - key: FRONTEND_URL
         sync: false
       - key: FRONTEND_URLS
@@ -66,9 +74,15 @@ Jwt__Audience=ShopApp
 APP_DATA_ROOT=/tmp/moonstore-data
 SQLITE_PATH=/tmp/moonstore-data/shop.db
 UPLOADS_PATH=/tmp/moonstore-data/uploads
+Cloudinary__CloudName=<your-cloudinary-cloud-name>
+Cloudinary__ApiKey=<your-cloudinary-api-key>
+Cloudinary__ApiSecret=<your-cloudinary-api-secret>
+Cloudinary__Folder=moon-store/products
 ```
 
 Do not set `DATABASE_URL` unless you migrate to PostgreSQL.
+
+Cloudinary is recommended for the demo because Render Free storage is ephemeral. If the Cloudinary variables are missing, the backend falls back to local `/uploads`, but those local files can disappear after a Render restart/redeploy.
 
 ## SQLite On Render Free
 
@@ -78,15 +92,15 @@ Expected behavior:
 
 - Products/users/orders are recreated by migrations and seeding when the app starts.
 - New signups, carts, favorites, orders, moderator changes, product edits, and uploaded images can disappear after restart/redeploy/spin-down.
-- Uploaded images stored in `/tmp/moonstore-data/uploads` are temporary.
+- Uploaded images stored in `/tmp/moonstore-data/uploads` are temporary unless Cloudinary is configured.
 
 Best practices:
 
 - Treat SQLite on Free as demo-only.
 - Keep seed data realistic enough for client demos.
 - Do not promise persistent customer data on Free.
-- Avoid uploading important product images through the admin dashboard on Free.
-- Keep product images in the frontend assets or an external image host if they must survive restarts.
+- Configure Cloudinary for admin product uploads that must survive restarts.
+- Keep fallback product images in the frontend assets or an external image host if Cloudinary is not configured.
 
 ## Free Persistent Database Alternatives
 
@@ -135,4 +149,3 @@ Expected:
 - Render usage page shows no paid resources.
 - No payment-triggering add-ons are enabled.
 - Cloudflare Pages frontend remains on its free plan.
-

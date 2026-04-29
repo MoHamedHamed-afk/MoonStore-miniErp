@@ -15,9 +15,15 @@ import { assetUrl } from '../../core/api.config';
     <div class="container" style="padding-top: 120px; min-height: 100vh;">
       <h1 style="font-size: 3rem; margin-bottom: 40px;">{{ translation.t('cart.title') }}</h1>
 
-      <div *ngIf="cartItems.length === 0">{{ translation.t('cart.empty') }}</div>
+      <div class="glass" *ngIf="isLoading" style="padding: 22px; border-radius: 16px; text-align: center;">Loading cart...</div>
+      <div class="glass" *ngIf="cartError" style="padding: 22px; border-radius: 16px; text-align: center; color: #ff8d99;">
+        {{ cartError }}
+        <button type="button" class="btn" style="margin-left: 12px; padding: 8px 16px;" (click)="loadCart()">Retry</button>
+      </div>
 
-      <div *ngIf="cartItems.length > 0">
+      <div *ngIf="!isLoading && !cartError && cartItems.length === 0">{{ translation.t('cart.empty') }}</div>
+
+      <div *ngIf="!isLoading && !cartError && cartItems.length > 0">
         <div class="glass" *ngFor="let item of cartItems; trackBy: trackByCartItemId" style="display: flex; justify-content: space-between; align-items: center; padding: 20px; border-radius: 16px; margin-bottom: 20px; gap: 16px; flex-wrap: wrap;">
           <div style="display: flex; align-items: center; gap: 20px;">
              <img [src]="getImgUrl(item.product?.imageUrl)" [alt]="item.product?.name || 'Cart product'" loading="lazy" decoding="async" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
@@ -50,6 +56,8 @@ import { assetUrl } from '../../core/api.config';
 })
 export class CartComponent implements OnInit {
   cartItems: CartItem[] = [];
+  isLoading = false;
+  cartError = '';
 
   constructor(
     private authService: AuthService,
@@ -69,7 +77,18 @@ export class CartComponent implements OnInit {
   }
 
   loadCart() {
-    this.cartService.getCart().subscribe(data => this.cartItems = data);
+    this.isLoading = true;
+    this.cartError = '';
+    this.cartService.getCart().subscribe({
+      next: data => {
+        this.cartItems = data;
+        this.isLoading = false;
+      },
+      error: () => {
+        this.cartError = 'Could not load your cart. Please try again.';
+        this.isLoading = false;
+      }
+    });
   }
 
   getImgUrl(url: string | undefined): string {
@@ -94,11 +113,17 @@ export class CartComponent implements OnInit {
   }
 
   removeItem(id: number) {
-    this.cartService.removeFromCart(id).subscribe(() => this.loadCart());
+    this.cartService.removeFromCart(id).subscribe({
+      next: () => this.loadCart(),
+      error: () => this.toastService.show('Could not remove this item.', 'error')
+    });
   }
 
   clearCart() {
-    this.cartService.clearCart().subscribe(() => this.loadCart());
+    this.cartService.clearCart().subscribe({
+      next: () => this.loadCart(),
+      error: () => this.toastService.show('Could not clear the cart.', 'error')
+    });
   }
 
   getTotal() {

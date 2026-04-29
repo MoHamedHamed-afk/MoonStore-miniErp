@@ -75,5 +75,11 @@ export const routes: Routes = [
     data: { description: 'Track your Moon Store orders and order statuses.' },
     loadComponent: () => import('./pages/my-orders/my-orders.component').then(m => m.MyOrdersComponent)
   },
+  {
+    path: 'trust',
+    title: 'Shipping, Returns & Contact | Moon Store',
+    data: { description: 'Moon Store shipping information, return policy, privacy note, and WhatsApp contact.' },
+    loadComponent: () => import('./pages/trust/trust.component').then(m => m.TrustComponent)
+  },
   { path: '**', redirectTo: '' }
 ];

@@ -279,7 +279,11 @@ public class OrdersController : ControllerBase
             UserId = GetUserId(),
             CustomerName = request.CustomerName,
             Email = request.Email,
+            PhoneNumber = request.PhoneNumber,
             Address = request.Address,
+            PaymentMethod = string.IsNullOrWhiteSpace(request.PaymentMethod)
+                ? "CashOnDelivery"
+                : request.PaymentMethod.Trim(),
             StoreId = store.Id,
             StoreName = store.Name,
             OrderDate = DateTime.UtcNow,
