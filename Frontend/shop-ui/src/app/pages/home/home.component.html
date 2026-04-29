@@ -2,6 +2,10 @@
 
 <main class="content-overlay">
   <section class="hero">
+    <div class="hero-moon" aria-hidden="true">
+      <img src="assets/images/hero_moon_realistic.jpg" alt="" class="moon-image" fetchpriority="high">
+    </div>
+
     <div class="container hero-layout">
       <div class="hero-copy">
         <h4 class="hero-label">{{ translation.t('home.heroLabel') }}</h4>
@@ -17,13 +21,141 @@
 
       <div class="hero-carousel">
         <img
-          *ngFor="let image of carouselImages; let i = index"
+          *ngFor="let image of carouselImages; let i = index; trackBy: trackByValue"
           [src]="image"
           [alt]="'Premium Moon Store Fashion Pose ' + (i + 1)"
           class="carousel-img"
           [style.opacity]="i === 0 ? '1' : '0'"
           [style.transform]="i === 0 ? 'scale(1) rotateY(0deg)' : 'scale(0.8) rotateY(-90deg)'"
         >
+      </div>
+    </div>
+  </section>
+
+  <section class="search-section" aria-labelledby="store-search-title">
+    <div class="container">
+      <div class="glass search-panel">
+        <div class="search-copy">
+          <p class="season-label">{{ translation.t('nav.brand') }}</p>
+          <h2 id="store-search-title">{{ searchTitle }}</h2>
+          <p>{{ searchSubtitle }}</p>
+        </div>
+
+        <div class="search-controls">
+          <label class="search-field" for="homeProductSearch">
+            <span class="visually-hidden">{{ searchTitle }}</span>
+            <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="11" cy="11" r="6.5" />
+              <path d="m16 16 4 4" />
+            </svg>
+            <input
+              id="homeProductSearch"
+              name="homeProductSearch"
+              type="search"
+              [(ngModel)]="searchQuery"
+              [placeholder]="searchPlaceholder"
+              autocomplete="off">
+            <button type="button" class="clear-search" *ngIf="isSearchActive" (click)="clearSearch()">
+              {{ clearSearchLabel }}
+            </button>
+          </label>
+
+          <div class="category-chips" aria-label="Product categories">
+            <button
+              type="button"
+              class="category-chip"
+              [class.active]="selectedSearchCategory === 'all'"
+              (click)="selectSearchCategory('all')">
+              {{ allCategoriesLabel }}
+            </button>
+            <button
+              type="button"
+              class="category-chip"
+              *ngFor="let category of categoryOptions; trackBy: trackByValue"
+              [class.active]="selectedSearchCategory === category"
+              (click)="selectSearchCategory(category)">
+              {{ category }}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="glass location-card" aria-labelledby="store-location-title">
+        <div class="location-orb" aria-hidden="true">
+          <svg viewBox="0 0 24 24" focusable="false">
+            <path d="M12 21s7-5.1 7-12A7 7 0 0 0 5 9c0 6.9 7 12 7 12Z" />
+            <circle cx="12" cy="9" r="2.4" />
+          </svg>
+        </div>
+        <div>
+          <p class="season-label">{{ locationEyebrow }}</p>
+          <h3 id="store-location-title">{{ locationTitle }}</h3>
+          <p>{{ locationSubtitle }}</p>
+        </div>
+        <div class="mini-map" aria-label="Mini map preview">
+          <iframe
+            [src]="storeMapEmbedUrl"
+            title="Moon Store location map"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade"
+            allowfullscreen>
+          </iframe>
+        </div>
+        <a
+          class="location-link"
+          [href]="storeMapsUrl"
+          target="_blank"
+          rel="noopener noreferrer">
+          {{ locationActionLabel }}
+        </a>
+      </aside>
+
+      <div class="search-results" *ngIf="isSearchActive">
+        <article
+          class="product-card glass"
+          *ngFor="let product of filteredSearchProducts; trackBy: trackByProductId"
+          role="button"
+          tabindex="0"
+          (click)="showDetails(product.id!)"
+          (keydown)="handleProductCardKeydown($event, product.id!)"
+          [attr.aria-label]="'View details for ' + product.name">
+          <div class="product-img-container">
+            <img [src]="getImgUrl(product.imageUrl)" [alt]="product.name" loading="lazy" decoding="async" class="product-image">
+            <div class="product-actions">
+              <button
+                type="button"
+                (click)="toggleFavorite(product); $event.stopPropagation()"
+                class="btn-icon glass"
+                [class.active]="isFavorite(product.id!)"
+                [attr.aria-label]="isFavorite(product.id!) ? 'Remove from favorites' : 'Add to favorites'">
+                {{ isFavorite(product.id!) ? '♥' : '♡' }}
+              </button>
+              <button
+                type="button"
+                (click)="addToCart(product); $event.stopPropagation()"
+                class="btn-icon glass"
+                aria-label="Add to cart">
+                <svg class="action-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                  <path d="M6.2 6.4h14.1l-1.7 7.2a2 2 0 0 1-2 1.6H9.2a2 2 0 0 1-2-1.7L5.7 3.8H3.4" />
+                  <circle cx="9.6" cy="19.2" r="1.4" />
+                  <circle cx="17.2" cy="19.2" r="1.4" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="product-info">
+            <div class="product-meta">
+              <h3>{{ product.name }}</h3>
+              <span class="product-price">${{ product.price }}</span>
+            </div>
+            <p>{{ product.description }}</p>
+          </div>
+        </article>
+
+        <div class="glass search-empty" *ngIf="filteredSearchProducts.length === 0">
+          {{ noSearchResultsLabel }}
+        </div>
       </div>
     </div>
   </section>
@@ -36,12 +168,19 @@
       </div>
 
       <div class="product-grid">
-        <ng-container *ngFor="let product of winterProducts">
-          <article class="product-card glass" (click)="showDetails(product.id!)">
+        <ng-container *ngFor="let product of winterProducts; trackBy: trackByProductId">
+          <article
+            class="product-card glass"
+            role="button"
+            tabindex="0"
+            (click)="showDetails(product.id!)"
+            (keydown)="handleProductCardKeydown($event, product.id!)"
+            [attr.aria-label]="'View details for ' + product.name">
             <div class="product-img-container">
-              <img [src]="getImgUrl(product.imageUrl)" [alt]="product.name" loading="lazy" class="product-image">
+              <img [src]="getImgUrl(product.imageUrl)" [alt]="product.name" loading="lazy" decoding="async" class="product-image">
               <div class="product-actions">
                 <button
+                  type="button"
                   (click)="toggleFavorite(product); $event.stopPropagation()"
                   class="btn-icon glass"
                   [class.active]="isFavorite(product.id!)"
@@ -49,10 +188,15 @@
                   {{ isFavorite(product.id!) ? '♥' : '♡' }}
                 </button>
                 <button
+                  type="button"
                   (click)="addToCart(product); $event.stopPropagation()"
                   class="btn-icon glass"
                   aria-label="Add to cart">
-                  &#128722;
+                  <svg class="action-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M6.2 6.4h14.1l-1.7 7.2a2 2 0 0 1-2 1.6H9.2a2 2 0 0 1-2-1.7L5.7 3.8H3.4" />
+                    <circle cx="9.6" cy="19.2" r="1.4" />
+                    <circle cx="17.2" cy="19.2" r="1.4" />
+                  </svg>
                 </button>
               </div>
             </div>
@@ -78,12 +222,19 @@
       </div>
 
       <div class="product-grid">
-        <ng-container *ngFor="let product of summerProducts">
-          <article class="product-card glass" (click)="showDetails(product.id!)">
+        <ng-container *ngFor="let product of summerProducts; trackBy: trackByProductId">
+          <article
+            class="product-card glass"
+            role="button"
+            tabindex="0"
+            (click)="showDetails(product.id!)"
+            (keydown)="handleProductCardKeydown($event, product.id!)"
+            [attr.aria-label]="'View details for ' + product.name">
             <div class="product-img-container">
-              <img [src]="getImgUrl(product.imageUrl)" [alt]="product.name" loading="lazy" class="product-image">
+              <img [src]="getImgUrl(product.imageUrl)" [alt]="product.name" loading="lazy" decoding="async" class="product-image">
               <div class="product-actions">
                 <button
+                  type="button"
                   (click)="toggleFavorite(product); $event.stopPropagation()"
                   class="btn-icon glass"
                   [class.active]="isFavorite(product.id!)"
@@ -91,10 +242,15 @@
                   {{ isFavorite(product.id!) ? '♥' : '♡' }}
                 </button>
                 <button
+                  type="button"
                   (click)="addToCart(product); $event.stopPropagation()"
                   class="btn-icon glass"
                   aria-label="Add to cart">
-                  &#128722;
+                  <svg class="action-svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M6.2 6.4h14.1l-1.7 7.2a2 2 0 0 1-2 1.6H9.2a2 2 0 0 1-2-1.7L5.7 3.8H3.4" />
+                    <circle cx="9.6" cy="19.2" r="1.4" />
+                    <circle cx="17.2" cy="19.2" r="1.4" />
+                  </svg>
                 </button>
               </div>
             </div>

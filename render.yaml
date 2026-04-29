@@ -2,15 +2,16 @@ services:
   - type: web
     name: moonstore-backend
     runtime: docker
+    plan: free
     rootDir: Backend/ShopApi
     healthCheckPath: /health
-    disk:
-      name: moonstore-data
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: APP_DATA_ROOT
-        value: /var/data
+        value: /tmp/moonstore-data
+      - key: SQLITE_PATH
+        value: /tmp/moonstore-data/shop.db
+      - key: UPLOADS_PATH
+        value: /tmp/moonstore-data/uploads
       - key: FRONTEND_URL
         sync: false
       - key: FRONTEND_URLS

@@ -3,7 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { CartService } from '../../services/cart.service';
 import { FavouritesService } from '../../services/favourites.service';
-import { Product, ProductService } from '../../services/product.service';
+import { Product, ProductService, Store } from '../../services/product.service';
 import { ToastService } from '../../services/toast.service';
 import { TranslationService } from '../../services/translation.service';
 import { assetUrl } from '../../core/api.config';
@@ -22,6 +22,23 @@ import { assetUrl } from '../../core/api.config';
           <h1 style="font-size: 3rem; margin-bottom: 20px;">{{ product.name }}</h1>
           <p style="font-size: 1.2rem; margin-bottom: 30px; opacity: 0.8;">{{ product.description }}</p>
           <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary-accent); margin-bottom: 16px;">\${{ product.price }}</div>
+          <div style="display: grid; gap: 14px; margin-bottom: 22px;">
+            <div *ngIf="product.sizes?.length" style="display: grid; gap: 8px;">
+              <strong>Available sizes</strong>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <span *ngFor="let size of product.sizes" style="font-size: .9rem; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.08); border: 1px solid var(--glass-border);">{{ size }}</span>
+              </div>
+            </div>
+            <div *ngIf="product.colors?.length" style="display: grid; gap: 8px;">
+              <strong>Available colors</strong>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <span *ngFor="let color of product.colors" style="font-size: .9rem; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.08); border: 1px solid var(--glass-border);">{{ color }}</span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+              <span *ngFor="let store of availableStores" style="font-size: .82rem; padding: 6px 10px; border-radius: 999px; background: rgba(255,255,255,.08);">{{ store.name }}</span>
+            </div>
+          </div>
           <div style="margin-bottom: 40px; opacity: 0.78;">
             {{ (product.stockQuantity || 0) > 0
               ? translation.t('product.inStockCount', { count: product.stockQuantity || 0 })
@@ -43,6 +60,7 @@ import { assetUrl } from '../../core/api.config';
 })
 export class ProductDetailsComponent implements OnInit {
   product: Product | undefined;
+  stores: Store[] = [];
 
   constructor(
     private route: ActivatedRoute,
@@ -55,9 +73,15 @@ export class ProductDetailsComponent implements OnInit {
 
   ngOnInit() {
     const id = Number(this.route.snapshot.paramMap.get('id'));
+    this.productService.getStores().subscribe(stores => this.stores = stores);
     this.productService.getProducts().subscribe(data => {
       this.product = data.find(product => product.id === id);
     });
+  }
+
+  get availableStores(): Store[] {
+    const ids = this.product?.availableStoreIds ?? [];
+    return this.stores.filter(store => ids.includes(store.id));
   }
 
   get imageUrl(): string {
@@ -74,7 +98,7 @@ export class ProductDetailsComponent implements OnInit {
       return;
     }
 
-    this.cartService.addToCart(this.product.id).subscribe({
+    this.cartService.addToCart(this.product.id, { quantity: 1 }).subscribe({
       next: () => this.toastService.show(this.translation.t('product.addedToCart'), 'success'),
       error: error => this.toastService.show(
         this.cartService.getUserFacingError(error, this.translation.t('product.loginCart')),

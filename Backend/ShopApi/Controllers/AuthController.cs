@@ -28,7 +28,7 @@ public class AuthController : ControllerBase
     {
         var user = await _context.Users.SingleOrDefaultAsync(u => u.Username == loginDto.Username);
 
-        if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
+        if (user == null || !user.IsActive || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
         {
             return Unauthorized("Invalid credentials");
         }
@@ -42,7 +42,8 @@ public class AuthController : ControllerBase
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim(ClaimTypes.Name, user.Username),
-                new Claim(ClaimTypes.Role, user.Username == "admin" ? "Admin" : "User")
+                new Claim(ClaimTypes.Role, user.Role),
+                new Claim("assignedStoreId", user.AssignedStoreId?.ToString() ?? string.Empty)
             }),
             Expires = DateTime.UtcNow.AddDays(7),
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature),
@@ -82,6 +83,7 @@ public class AuthController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<AdminCustomerDto>>> GetUsers()
     {
+        var storeLookup = await _context.Stores.AsNoTracking().ToDictionaryAsync(store => store.Id, store => store.Name);
         var users = await _context.Users
             .AsNoTracking()
             .ToListAsync();
@@ -105,7 +107,10 @@ public class AuthController : ControllerBase
                     Username = user.Username,
                     Email = user.Email,
                     PhoneNumber = user.PhoneNumber,
-                    Role = user.Username == "admin" ? "Admin" : "User",
+                    Role = user.Role,
+                    AssignedStoreId = user.AssignedStoreId,
+                    AssignedStoreName = user.AssignedStoreId.HasValue && storeLookup.TryGetValue(user.AssignedStoreId.Value, out var storeName) ? storeName : null,
+                    IsActive = user.IsActive,
                     OrdersCount = userOrders.Count,
                     TotalSpent = userOrders.Sum(order => order.TotalAmount),
                     LatestOrderDate = latestOrder?.OrderDate,
@@ -117,6 +122,100 @@ public class AuthController : ControllerBase
             .ToList();
 
         return Ok(customers);
+    }
+
+    [HttpGet("moderators")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<IEnumerable<AdminCustomerDto>>> GetModerators()
+    {
+        var storeLookup = await _context.Stores.AsNoTracking().ToDictionaryAsync(store => store.Id, store => store.Name);
+        var moderators = await _context.Users
+            .AsNoTracking()
+            .Where(user => user.Role == "Moderator")
+            .OrderBy(user => user.Username)
+            .ToListAsync();
+
+        return moderators
+            .Select(user => new AdminCustomerDto
+            {
+                Id = user.Id,
+                Username = user.Username,
+                Email = user.Email,
+                PhoneNumber = user.PhoneNumber,
+                Role = user.Role,
+                AssignedStoreId = user.AssignedStoreId,
+                AssignedStoreName = user.AssignedStoreId.HasValue && storeLookup.TryGetValue(user.AssignedStoreId.Value, out var storeName) ? storeName : null,
+                IsActive = user.IsActive
+            })
+            .ToList();
+    }
+
+    [HttpPost("moderators")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> CreateModerator([FromBody] ModeratorRequestDto request)
+    {
+        if (!await _context.Stores.AnyAsync(store => store.Id == request.AssignedStoreId && store.IsActive))
+        {
+            return BadRequest("Store does not exist.");
+        }
+
+        if (await _context.Users.AnyAsync(user => user.Username == request.Username))
+        {
+            return BadRequest("Username already exists");
+        }
+
+        var moderator = new User
+        {
+            Username = request.Username,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(string.IsNullOrWhiteSpace(request.Password) ? "moderator123" : request.Password),
+            Email = request.Email,
+            PhoneNumber = request.PhoneNumber,
+            Role = "Moderator",
+            AssignedStoreId = request.AssignedStoreId,
+            IsActive = request.IsActive
+        };
+
+        _context.Users.Add(moderator);
+        await _context.SaveChangesAsync();
+        return Ok(new { moderator.Id, moderator.Username, moderator.AssignedStoreId });
+    }
+
+    [HttpPut("moderators/{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> UpdateModerator(int id, [FromBody] ModeratorRequestDto request)
+    {
+        var moderator = await _context.Users.FirstOrDefaultAsync(user => user.Id == id && user.Role == "Moderator");
+        if (moderator == null) return NotFound();
+
+        if (!await _context.Stores.AnyAsync(store => store.Id == request.AssignedStoreId && store.IsActive))
+        {
+            return BadRequest("Store does not exist.");
+        }
+
+        moderator.Email = request.Email;
+        moderator.PhoneNumber = request.PhoneNumber;
+        moderator.AssignedStoreId = request.AssignedStoreId;
+        moderator.IsActive = request.IsActive;
+
+        if (!string.IsNullOrWhiteSpace(request.Password))
+        {
+            moderator.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
+        }
+
+        await _context.SaveChangesAsync();
+        return NoContent();
+    }
+
+    [HttpDelete("moderators/{id}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeactivateModerator(int id)
+    {
+        var moderator = await _context.Users.FirstOrDefaultAsync(user => user.Id == id && user.Role == "Moderator");
+        if (moderator == null) return NotFound();
+
+        moderator.IsActive = false;
+        await _context.SaveChangesAsync();
+        return NoContent();
     }
 
     [HttpPost("forgot-password")]

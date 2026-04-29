@@ -1,5 +1,14 @@
 <app-toast></app-toast>
 
+<a class="skip-link" href="#main-content">Skip to main content</a>
+
+<div *ngIf="showBrandIntro" class="brand-intro" aria-hidden="true">
+  <div class="brand-intro-card">
+    <span class="brand-intro-moon"></span>
+    <span class="brand-intro-text">{{ translation.t('nav.brand') }}</span>
+  </div>
+</div>
+
 <nav *ngIf="shouldShowAppNavbar" class="glass navbar">
   <div class="container nav-content">
     <div *ngIf="showWelcome" class="welcome-overlay">
@@ -33,14 +42,14 @@
 
       <ng-container *ngIf="currentUser">
         <a
-          *ngIf="currentUser.role !== 'Admin'"
+          *ngIf="currentUser.role === 'User'"
           routerLink="/my-orders"
           routerLinkActive="active"
           (click)="closeMobileMenu()">
           {{ translation.t('nav.myOrders') }}
         </a>
         <a
-          *ngIf="currentUser.role === 'Admin'"
+          *ngIf="currentUser.role === 'Admin' || currentUser.role === 'Moderator'"
           routerLink="/admin"
           routerLinkActive="active"
           class="admin-link"
@@ -69,4 +78,6 @@
   </div>
 </nav>
 
-<router-outlet></router-outlet>
+<main id="main-content" tabindex="-1">
+  <router-outlet></router-outlet>
+</main>

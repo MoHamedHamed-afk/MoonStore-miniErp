@@ -11,6 +11,8 @@ export interface OrderItem {
   quantity: number;
   productName: string;
   productImageUrl?: string;
+  selectedSize?: string;
+  selectedColor?: string;
   unitPrice: number;
 }
 
@@ -20,6 +22,8 @@ export interface Order {
   customerName: string;
   email: string;
   address: string;
+  storeId: number;
+  storeName: string;
   totalAmount: number;
   orderDate?: string;
   status: string;
@@ -30,9 +34,12 @@ export interface CreateOrderPayload {
   customerName: string;
   email: string;
   address: string;
+  storeId: number;
   items: Array<{
     productId: number;
     quantity: number;
+    selectedSize?: string;
+    selectedColor?: string;
   }>;
 }
 
@@ -60,8 +67,8 @@ export class OrderService {
     return this.http.get<Order[]>(`${this.apiUrl}/mine`, this.getHeaders());
   }
 
-  createOrder(order: CreateOrderPayload): Observable<Order> {
-    return this.http.post<Order>(this.apiUrl, order, this.getHeaders());
+  createOrder(order: CreateOrderPayload): Observable<Order | Order[]> {
+    return this.http.post<Order | Order[]>(this.apiUrl, order, this.getHeaders());
   }
 
   updateOrderStatus(id: number, status: string): Observable<any> {

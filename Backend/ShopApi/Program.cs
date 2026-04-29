@@ -95,17 +95,35 @@ using (var scope = app.Services.CreateScope())
 // Configure the HTTP request pipeline.
 app.UseForwardedHeaders();
 
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.TryAdd("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.TryAdd("X-Frame-Options", "DENY");
+    context.Response.Headers.TryAdd("Referrer-Policy", "strict-origin-when-cross-origin");
+    await next();
+});
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseHttpsRedirection();
 }
-app.UseStaticFiles(); // To serve generated images
+app.UseStaticFiles(new StaticFileOptions
+{
+    OnPrepareResponse = context =>
+    {
+        context.Context.Response.Headers.CacheControl = "public,max-age=604800";
+    }
+}); // To serve generated images
 
 var uploadsPath = AppPaths.ResolveUploadsPath(app.Environment, app.Configuration);
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(uploadsPath),
-    RequestPath = "/uploads"
+    RequestPath = "/uploads",
+    OnPrepareResponse = context =>
+    {
+        context.Context.Response.Headers.CacheControl = "public,max-age=604800";
+    }
 });
 
 app.UseCors("AllowFrontend");

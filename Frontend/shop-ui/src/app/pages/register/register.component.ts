@@ -17,24 +17,24 @@ import { TranslationService } from '../../services/translation.service';
 
         <form (ngSubmit)="onSubmit()">
           <div class="form-group">
-            <label>{{ translation.t('register.username') }}</label>
-            <input type="text" [(ngModel)]="credentials.username" name="username" class="form-control" required>
+            <label for="register-username">{{ translation.t('register.username') }}</label>
+            <input id="register-username" type="text" [(ngModel)]="credentials.username" name="username" class="form-control" autocomplete="username" required>
           </div>
 
           <div class="form-group">
-            <label>{{ translation.t('register.email') }}</label>
-            <input type="email" [(ngModel)]="credentials.email" name="email" class="form-control" required>
+            <label for="register-email">{{ translation.t('register.email') }}</label>
+            <input id="register-email" type="email" [(ngModel)]="credentials.email" name="email" class="form-control" autocomplete="email" required>
           </div>
 
           <div class="form-group">
-            <label>{{ translation.t('register.phone') }}</label>
-            <input type="text" [(ngModel)]="credentials.phoneNumber" name="phoneNumber" class="form-control">
+            <label for="register-phone">{{ translation.t('register.phone') }}</label>
+            <input id="register-phone" type="tel" [(ngModel)]="credentials.phoneNumber" name="phoneNumber" class="form-control" autocomplete="tel">
           </div>
 
           <div class="form-group">
-            <label>{{ translation.t('register.password') }}</label>
+            <label for="register-password">{{ translation.t('register.password') }}</label>
             <div class="password-field">
-              <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="credentials.password" name="password" class="form-control" required>
+              <input id="register-password" [type]="showPassword ? 'text' : 'password'" [(ngModel)]="credentials.password" name="password" class="form-control" autocomplete="new-password" required>
               <button
                 type="button"
                 class="toggle-password"

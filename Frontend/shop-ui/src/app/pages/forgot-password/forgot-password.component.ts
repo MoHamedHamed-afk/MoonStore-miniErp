@@ -17,8 +17,8 @@ import { apiUrl } from '../../core/api.config';
         <h2>{{ translation.t('forgot.title') }}</h2>
         <form (ngSubmit)="onSubmit()">
           <div class="form-group">
-            <label>{{ translation.t('forgot.email') }}</label>
-            <input type="email" [(ngModel)]="email" name="email" class="form-control" required>
+            <label for="forgot-email">{{ translation.t('forgot.email') }}</label>
+            <input id="forgot-email" type="email" [(ngModel)]="email" name="email" class="form-control" autocomplete="email" required>
           </div>
           <button type="submit" class="btn submit-btn">{{ translation.t('forgot.submit') }}</button>
         </form>

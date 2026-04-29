@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 import { CartService } from '../../services/cart.service';
 import { FavouritesService, Favorite } from '../../services/favourites.service';
 import { ToastService } from '../../services/toast.service';
@@ -20,16 +21,16 @@ import { assetUrl } from '../../core/api.config';
       </div>
 
       <div class="product-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 40px;">
-        <div class="product-card glass" *ngFor="let fav of favorites" style="padding: 20px; border-radius: 24px;">
+        <div class="product-card glass" *ngFor="let fav of favorites; trackBy: trackByFavoriteId" style="padding: 20px; border-radius: 24px;">
           <div class="image-wrapper" style="width: 100%; height: 250px; overflow: hidden; border-radius: 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: center;">
-            <img [src]="getImgUrl(fav.product?.imageUrl)" [alt]="fav.product?.name" style="max-height: 100%; max-width: 100%; object-fit: contain;">
+            <img [src]="getImgUrl(fav.product?.imageUrl)" [alt]="fav.product?.name || 'Favorite product'" loading="lazy" decoding="async" style="max-height: 100%; max-width: 100%; object-fit: contain;">
           </div>
           <div class="product-info" style="text-align: center;">
             <h3 style="font-size: 1.2rem; margin-bottom: 10px;">{{ fav.product?.name }}</h3>
             <div class="price" style="font-size: 1.5rem; font-weight: 800; color: var(--primary-accent); margin-bottom: 20px;">\${{ fav.product?.price }}</div>
             <div class="action-buttons" style="display: flex; gap: 10px; justify-content: center;">
-              <button class="btn" style="padding: 10px;" (click)="addToCart(fav.product?.id!)">{{ translation.t('favourites.addToCart') }}</button>
-              <button class="btn" style="padding: 10px; background: #ff4757;" (click)="removeFav(fav.product?.id!)">{{ translation.t('favourites.remove') }}</button>
+              <button type="button" class="btn" style="padding: 10px;" (click)="addToCart(fav.product?.id!)">{{ translation.t('favourites.addToCart') }}</button>
+              <button type="button" class="btn" style="padding: 10px; background: #ff4757;" (click)="removeFav(fav.product?.id!)">{{ translation.t('favourites.remove') }}</button>
             </div>
           </div>
         </div>
@@ -41,13 +42,20 @@ export class FavouritesComponent implements OnInit {
   favorites: Favorite[] = [];
 
   constructor(
+    private authService: AuthService,
     private favService: FavouritesService,
     private cartService: CartService,
+    private router: Router,
     private toastService: ToastService,
     public translation: TranslationService
   ) {}
 
   ngOnInit() {
+    if (!this.authService.isAuthenticated()) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
     this.loadFavorites();
   }
 
@@ -73,5 +81,9 @@ export class FavouritesComponent implements OnInit {
         'error'
       )
     });
+  }
+
+  trackByFavoriteId(_: number, favorite: Favorite): number {
+    return favorite.id;
   }
 }

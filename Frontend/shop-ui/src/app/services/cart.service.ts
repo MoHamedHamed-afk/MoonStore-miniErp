@@ -11,7 +11,16 @@ export interface CartItem {
   userId: number;
   productId: number;
   quantity: number;
+  selectedSize?: string;
+  selectedColor?: string;
+  unitPrice?: number;
   product?: Product;
+}
+
+export interface AddCartItemPayload {
+  selectedSize?: string;
+  selectedColor?: string;
+  quantity?: number;
 }
 
 @Injectable({
@@ -38,8 +47,8 @@ export class CartService {
     return this.http.get<CartItem[]>(this.apiUrl, this.getHeaders());
   }
 
-  addToCart(productId: number): Observable<any> {
-    return this.http.post(`${this.apiUrl}/${productId}`, {}, this.getHeaders());
+  addToCart(productId: number, payload: AddCartItemPayload = {}): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${productId}`, payload, this.getHeaders());
   }
 
   updateQuantity(id: number, quantity: number): Observable<any> {

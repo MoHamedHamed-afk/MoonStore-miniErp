@@ -13,7 +13,16 @@ export interface Product {
   category?: string;
   supplier?: string;
   stockQuantity?: number;
+  sizes?: string[];
+  colors?: string[];
+  availableStoreIds?: number[];
   createdAt?: string;
+}
+
+export interface Store {
+  id: number;
+  name: string;
+  isActive: boolean;
 }
 
 @Injectable({
@@ -33,6 +42,10 @@ export class ProductService {
 
   getProducts(): Observable<Product[]> {
     return this.http.get<Product[]>(this.apiUrl);
+  }
+
+  getStores(): Observable<Store[]> {
+    return this.http.get<Store[]>(apiUrl('/api/stores'));
   }
 
   createProduct(product: Product): Observable<Product> {

@@ -1,6 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.IO;
-using System.Threading.Tasks;
 using ShopApi.Data;
 
 namespace ShopApi.Controllers;
@@ -9,6 +8,15 @@ namespace ShopApi.Controllers;
 [Route("api/[controller]")]
 public class UploadsController : ControllerBase
 {
+    private const long MaxImageBytes = 10 * 1024 * 1024;
+    private static readonly Dictionary<string, string> AllowedImageTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["image/jpeg"] = ".jpg",
+        ["image/png"] = ".png",
+        ["image/webp"] = ".webp",
+        ["image/gif"] = ".gif"
+    };
+
     private readonly IWebHostEnvironment _environment;
     private readonly IConfiguration _configuration;
 
@@ -19,14 +27,31 @@ public class UploadsController : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Upload(IFormFile file)
     {
         if (file == null || file.Length == 0)
             return BadRequest("No file uploaded");
 
-        var uploadsFolder = AppPaths.ResolveUploadsPath(_environment, _configuration);
+        if (file.Length > MaxImageBytes)
+            return BadRequest("Image is too large. Please upload an image up to 10MB.");
 
-        var uniqueFileName = Guid.NewGuid().ToString() + "_" + file.FileName;
+        if (!AllowedImageTypes.TryGetValue(file.ContentType, out var safeExtension))
+            return BadRequest("Unsupported image type. Please upload JPG, PNG, WebP, or GIF.");
+
+        var uploadsFolder = AppPaths.ResolveUploadsPath(_environment, _configuration);
+        Directory.CreateDirectory(uploadsFolder);
+
+        var originalName = Path.GetFileNameWithoutExtension(file.FileName);
+        var safeName = string.Concat(originalName.Select(character =>
+            char.IsLetterOrDigit(character) || character is '-' or '_' ? character : '-'));
+
+        if (string.IsNullOrWhiteSpace(safeName))
+        {
+            safeName = "product-image";
+        }
+
+        var uniqueFileName = $"{Guid.NewGuid():N}_{safeName}{safeExtension}";
         var filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
         using (var fileStream = new FileStream(filePath, FileMode.Create))

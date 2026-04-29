@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { catchError, tap, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { Product } from './product.service';
 import { apiUrl } from '../core/api.config';
@@ -67,10 +68,21 @@ export class FavouritesService {
   toggleFavorite(productId: number): Observable<any> {
     if (this.isFavorite(productId)) {
       this.favoriteIds.delete(productId);
-      return this.removeFavorite(productId);
+      return this.removeFavorite(productId).pipe(
+        catchError(error => {
+          this.favoriteIds.add(productId);
+          return throwError(() => error);
+        })
+      );
     } else {
       this.favoriteIds.add(productId);
-      return this.addFavorite(productId);
+      return this.addFavorite(productId).pipe(
+        tap(() => this.favoriteIds.add(productId)),
+        catchError(error => {
+          this.favoriteIds.delete(productId);
+          return throwError(() => error);
+        })
+      );
     }
   }
 

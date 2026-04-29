@@ -2,10 +2,12 @@ import { AfterViewInit, Component, ElementRef, Inject, OnDestroy, PLATFORM_ID, V
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { FormsModule, NgForm } from '@angular/forms';
 import { Router } from '@angular/router';
+import { AuthService } from '../../services/auth.service';
 import { CartItem, CartService } from '../../services/cart.service';
 import { OrderService } from '../../services/order.service';
 import { ToastService } from '../../services/toast.service';
 import { TranslationService } from '../../services/translation.service';
+import { assetUrl } from '../../core/api.config';
 import * as THREE from 'three';
 
 @Component({
@@ -48,51 +50,86 @@ import * as THREE from 'three';
           <form #shippingForm="ngForm" (ngSubmit)="onSubmit(shippingForm)" *ngIf="!success" novalidate>
             <div class="form-grid">
               <div class="field full">
-                <label>{{ translation.t('shipping.fullName') }}</label>
-                <input type="text" [(ngModel)]="form.name" name="name" #name="ngModel" required minlength="3">
+                <label for="shipping-name">{{ translation.t('shipping.fullName') }}</label>
+                <input id="shipping-name" type="text" [(ngModel)]="form.name" name="name" #name="ngModel" autocomplete="name" required minlength="3">
                 <small class="error-text" *ngIf="name.invalid && name.touched">{{ translation.t('shipping.errors.fullName') }}</small>
               </div>
 
               <div class="field">
-                <label>{{ translation.t('shipping.email') }}</label>
-                <input type="email" [(ngModel)]="form.email" name="email" #email="ngModel" required email>
+                <label for="shipping-email">{{ translation.t('shipping.email') }}</label>
+                <input id="shipping-email" type="email" [(ngModel)]="form.email" name="email" #email="ngModel" autocomplete="email" required email>
                 <small class="error-text" *ngIf="email.invalid && email.touched">{{ translation.t('shipping.errors.email') }}</small>
               </div>
 
               <div class="field">
-                <label>{{ translation.t('shipping.phone') }}</label>
-                <input type="tel" [(ngModel)]="form.phone" name="phone" #phone="ngModel" required pattern="^\\+?[0-9\\s\\-]{8,}$" placeholder="+20 1X XXX XXXX">
+                <label for="shipping-phone">{{ translation.t('shipping.phone') }}</label>
+                <input id="shipping-phone" type="tel" [(ngModel)]="form.phone" name="phone" #phone="ngModel" autocomplete="tel" required pattern="^\\+?[0-9\\s\\-]{8,}$" placeholder="+20 1X XXX XXXX">
                 <small class="error-text" *ngIf="phone.invalid && phone.touched">{{ translation.t('shipping.errors.phone') }}</small>
               </div>
 
               <div class="field">
-                <label>{{ translation.t('shipping.city') }}</label>
-                <input type="text" [(ngModel)]="form.city" name="city" #city="ngModel" required>
+                <label for="shipping-city">{{ translation.t('shipping.city') }}</label>
+                <input id="shipping-city" type="text" [(ngModel)]="form.city" name="city" #city="ngModel" autocomplete="address-level2" required>
                 <small class="error-text" *ngIf="city.invalid && city.touched">{{ translation.t('shipping.errors.city') }}</small>
               </div>
 
               <div class="field">
-                <label>{{ translation.t('shipping.area') }}</label>
-                <input type="text" [(ngModel)]="form.area" name="area" #area="ngModel" required>
+                <label for="shipping-area">{{ translation.t('shipping.area') }}</label>
+                <input id="shipping-area" type="text" [(ngModel)]="form.area" name="area" #area="ngModel" autocomplete="address-level3" required>
                 <small class="error-text" *ngIf="area.invalid && area.touched">{{ translation.t('shipping.errors.area') }}</small>
               </div>
 
               <div class="field full">
-                <label>{{ translation.t('shipping.street') }}</label>
-                <textarea [(ngModel)]="form.address" name="address" #address="ngModel" required rows="3"></textarea>
+                <label for="shipping-address">{{ translation.t('shipping.street') }}</label>
+                <textarea id="shipping-address" [(ngModel)]="form.address" name="address" #address="ngModel" autocomplete="street-address" required rows="3"></textarea>
                 <small class="error-text" *ngIf="address.invalid && address.touched">{{ translation.t('shipping.errors.street') }}</small>
               </div>
 
               <div class="field">
-                <label>{{ translation.t('shipping.apartment') }}</label>
-                <input type="text" [(ngModel)]="form.apartment" name="apartment" #apartment="ngModel" required>
+                <label for="shipping-apartment">{{ translation.t('shipping.apartment') }}</label>
+                <input id="shipping-apartment" type="text" [(ngModel)]="form.apartment" name="apartment" #apartment="ngModel" autocomplete="address-line2" required>
                 <small class="error-text" *ngIf="apartment.invalid && apartment.touched">{{ translation.t('shipping.errors.apartment') }}</small>
               </div>
 
               <div class="field">
-                <label>{{ translation.t('shipping.postal') }}</label>
-                <input type="text" [(ngModel)]="form.postalCode" name="postalCode" #postalCode="ngModel" required pattern="^[A-Za-z0-9\\-\\s]{4,10}$">
+                <label for="shipping-postal">{{ translation.t('shipping.postal') }}</label>
+                <input id="shipping-postal" type="text" [(ngModel)]="form.postalCode" name="postalCode" #postalCode="ngModel" autocomplete="postal-code" required pattern="^[A-Za-z0-9\\-\\s]{4,10}$">
                 <small class="error-text" *ngIf="postalCode.invalid && postalCode.touched">{{ translation.t('shipping.errors.postal') }}</small>
+              </div>
+            </div>
+
+            <div class="variant-section" *ngIf="cartItems.length">
+              <div class="variant-heading">
+                <span>Choose size and color</span>
+                <small>These choices will be saved with your order.</small>
+              </div>
+
+              <div class="variant-card" *ngFor="let item of cartItems">
+                <img [src]="getImgUrl(item.product?.imageUrl)" [alt]="item.product?.name || 'Product'">
+                <div class="variant-copy">
+                  <strong>{{ item.product?.name }}</strong>
+                  <span>Qty {{ item.quantity }} · \${{ item.unitPrice || item.product?.price || 0 }}</span>
+                </div>
+                <label *ngIf="item.product?.sizes?.length">
+                  Size
+                  <select
+                    [ngModel]="item.selectedSize || item.product?.sizes?.[0]"
+                    (ngModelChange)="item.selectedSize = $event"
+                    [name]="'size_' + item.id"
+                    required>
+                    <option *ngFor="let size of item.product?.sizes" [value]="size">{{ size }}</option>
+                  </select>
+                </label>
+                <label *ngIf="item.product?.colors?.length">
+                  Color
+                  <select
+                    [ngModel]="item.selectedColor || item.product?.colors?.[0]"
+                    (ngModelChange)="item.selectedColor = $event"
+                    [name]="'color_' + item.id"
+                    required>
+                    <option *ngFor="let color of item.product?.colors" [value]="color">{{ color }}</option>
+                  </select>
+                </label>
               </div>
             </div>
 
@@ -253,6 +290,7 @@ import * as THREE from 'three';
     .field.full { grid-column: 1 / -1; }
     .field label { font-weight: 600; }
     .field input,
+    .field select,
     .field textarea {
       width: 100%;
       padding: 13px 14px;
@@ -264,6 +302,47 @@ import * as THREE from 'three';
     }
     .field textarea { resize: vertical; min-height: 110px; }
     .error-text { color: #ff8d99; font-size: 0.8rem; min-height: 1em; }
+    .variant-section {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+      padding: 16px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.055);
+      border: 1px solid var(--glass-border);
+    }
+    .variant-heading { display: grid; gap: 4px; }
+    .variant-heading span { font-weight: 800; font-size: 1.05rem; }
+    .variant-heading small { opacity: 0.72; }
+    .variant-card {
+      display: grid;
+      grid-template-columns: 58px 1fr minmax(110px, 150px) minmax(110px, 150px);
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.055);
+    }
+    .variant-card img {
+      width: 58px;
+      height: 58px;
+      object-fit: contain;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 6px;
+    }
+    .variant-copy { display: grid; gap: 4px; }
+    .variant-copy span { opacity: .72; font-size: .92rem; }
+    .variant-card label { display: grid; gap: 7px; font-weight: 700; }
+    .variant-card select {
+      width: 100%;
+      padding: 11px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--glass-border);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-color);
+      outline: none;
+    }
     .order-summary {
       display: flex;
       align-items: center;
@@ -295,6 +374,8 @@ import * as THREE from 'three';
     }
     @media (max-width: 900px) {
       .shipping-layout { grid-template-columns: 1fr; }
+      .variant-card { grid-template-columns: 58px 1fr; }
+      .variant-card label { grid-column: span 1; }
       .shipping-visual { min-height: 280px; }
       .moon-orbit { width: 640px; height: 640px; right: -240px; top: -120px; }
       .moon { width: 134px; height: 134px; }
@@ -348,15 +429,29 @@ export class ShippingComponent implements AfterViewInit, OnDestroy {
   private resizeHandler = () => this.onWindowResize();
 
   constructor(
+    private authService: AuthService,
     private cartService: CartService,
     private orderService: OrderService,
     private toastService: ToastService,
     private router: Router,
     public translation: TranslationService,
     @Inject(PLATFORM_ID) private platformId: object
-  ) {
+  ) {}
+
+  ngOnInit() {
+    if (!this.authService.isAuthenticated()) {
+      this.router.navigate(['/login']);
+      return;
+    }
+
     this.cartService.getCart().subscribe({
-      next: data => this.cartItems = data,
+      next: data => {
+        this.cartItems = data.map(item => ({
+          ...item,
+          selectedSize: item.selectedSize || item.product?.sizes?.[0],
+          selectedColor: item.selectedColor || item.product?.colors?.[0]
+        }));
+      },
       error: () => this.cartItems = []
     });
   }
@@ -369,7 +464,7 @@ export class ShippingComponent implements AfterViewInit, OnDestroy {
   }
 
   get totalAmount(): number {
-    return this.cartItems.reduce((sum, item) => sum + ((item.product?.price ?? 0) * item.quantity), 0);
+    return this.cartItems.reduce((sum, item) => sum + ((item.unitPrice || item.product?.price || 0) * item.quantity), 0);
   }
 
   onSubmit(form: NgForm) {
@@ -396,9 +491,12 @@ export class ShippingComponent implements AfterViewInit, OnDestroy {
       customerName: this.form.name,
       email: this.form.email,
       address: fullAddress,
+      storeId: 0,
       items: this.cartItems.map(item => ({
         productId: item.productId,
-        quantity: item.quantity
+        quantity: item.quantity,
+        selectedSize: item.selectedSize,
+        selectedColor: item.selectedColor
       }))
     }).subscribe({
       next: () => {
@@ -407,12 +505,34 @@ export class ShippingComponent implements AfterViewInit, OnDestroy {
           this.cartItems = [];
         });
       },
-      error: () => this.toastService.show(this.translation.t('shipping.errors.createFailed'), 'error')
+      error: error => this.toastService.show(this.getOrderError(error), 'error')
     });
   }
 
   goHome() {
     this.router.navigate(['/']);
+  }
+
+  getImgUrl(url: string | undefined): string {
+    return assetUrl(url);
+  }
+
+  private getOrderError(error: unknown): string {
+    if (typeof error === 'object' && error && 'error' in error) {
+      const body = (error as { error?: unknown }).error;
+      if (typeof body === 'string' && body.trim()) {
+        return body;
+      }
+
+      if (typeof body === 'object' && body && 'message' in body) {
+        const message = (body as { message?: unknown }).message;
+        if (typeof message === 'string' && message.trim()) {
+          return message;
+        }
+      }
+    }
+
+    return this.translation.t('shipping.errors.createFailed');
   }
 
   private startVisualCarousel() {

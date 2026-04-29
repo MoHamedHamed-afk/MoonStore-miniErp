@@ -5,6 +5,7 @@ import { AuthService, User } from './services/auth.service';
 import { ToastComponent } from './components/toast/toast.component';
 import { ToastService } from './services/toast.service';
 import { TranslationService } from './services/translation.service';
+import { SeoService } from './services/seo.service';
 
 @Component({
   selector: 'app-root',
@@ -19,17 +20,23 @@ export class AppComponent implements OnInit {
   currentUser: User | null = null;
   showWelcome = false;
   isMobileMenuOpen = false;
+  showBrandIntro = false;
+  private readonly introStorageKey = 'moon-store-intro-seen';
 
   constructor(
     private authService: AuthService,
     private router: Router,
     private toastService: ToastService,
-    public translation: TranslationService
+    public translation: TranslationService,
+    private seoService: SeoService
   ) {
     this.applyTheme();
   }
 
   ngOnInit() {
+    this.initBrandIntro();
+    this.seoService.watchRouteChanges();
+
     this.authService.currentUser$.subscribe(user => {
       const wasLoggedOut = !this.currentUser && user;
       this.currentUser = user;
@@ -69,6 +76,26 @@ export class AppComponent implements OnInit {
     } else {
       document.body.classList.remove('dark');
     }
+  }
+
+  private initBrandIntro() {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const alreadySeen = sessionStorage.getItem(this.introStorageKey) === 'true';
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (alreadySeen || prefersReducedMotion) {
+      return;
+    }
+
+    this.showBrandIntro = true;
+    sessionStorage.setItem(this.introStorageKey, 'true');
+
+    window.setTimeout(() => {
+      this.showBrandIntro = false;
+    }, 850);
   }
 
   logout() {

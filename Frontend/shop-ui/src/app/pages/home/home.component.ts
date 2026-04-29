@@ -1,6 +1,8 @@
 import { AfterViewInit, Component, ElementRef, Inject, OnDestroy, PLATFORM_ID, ViewChild } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { faFacebookF, faLinkedinIn } from '@fortawesome/free-brands-svg-icons';
 import { faPhone } from '@fortawesome/free-solid-svg-icons';
@@ -21,7 +23,7 @@ if (typeof window !== 'undefined') {
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterModule, FontAwesomeModule],
+  imports: [CommonModule, FormsModule, RouterModule, FontAwesomeModule],
   templateUrl: './home.component.html',
   styleUrls: ['./home.component.scss']
 })
@@ -31,6 +33,8 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
   readonly phoneIcon = faPhone;
   readonly facebookIcon = faFacebookF;
   readonly linkedinIcon = faLinkedinIn;
+  readonly storeMapsUrl = 'https://maps.app.goo.gl/Y46TNz8Xu1qvK9DT6?g_st=aw';
+  readonly storeMapEmbedUrl: SafeResourceUrl;
   readonly carouselImages = [
     'assets/images/male_pose_1.png',
     'assets/images/male_pose_2.png',
@@ -43,6 +47,8 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
   products: Product[] = [];
   summerProducts: Product[] = [];
   winterProducts: Product[] = [];
+  searchQuery = '';
+  selectedSearchCategory = 'all';
 
   private renderer!: THREE.WebGLRenderer;
   private scene!: THREE.Scene;
@@ -60,8 +66,13 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
     private router: Router,
     private toastService: ToastService,
     public translation: TranslationService,
+    private sanitizer: DomSanitizer,
     @Inject(PLATFORM_ID) private platformId: object
-  ) {}
+  ) {
+    this.storeMapEmbedUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
+      'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d216.0134054908248!2d32.54770860829238!3d29.97326528609273!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x145625ed2ebcdf9f%3A0xb4a672b73de16a76!2z2YXYudi12LHYqSDYstmH2LHYqSDYp9mE2LPZiNmK2LM!5e0!3m2!1sen!2seg!4v1777424698587!5m2!1sen!2seg'
+    );
+  }
 
   ngAfterViewInit() {
     if (!isPlatformBrowser(this.platformId)) {
@@ -104,6 +115,106 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
 
   showDetails(productId: number) {
     this.router.navigate(['/product', productId]);
+  }
+
+  handleProductCardKeydown(event: KeyboardEvent, productId: number) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      this.showDetails(productId);
+    }
+  }
+
+  trackByProductId(_: number, product: Product): number | undefined {
+    return product.id;
+  }
+
+  trackByValue(_: number, value: string): string {
+    return value;
+  }
+
+  get searchPlaceholder(): string {
+    return this.translation.isArabic ? 'ابحث عن منتج، لون، أو تصنيف' : 'Search products, colors, or categories';
+  }
+
+  get searchTitle(): string {
+    return this.translation.isArabic ? 'اعثر على قطعتك بسرعة' : 'Find your fit faster';
+  }
+
+  get searchSubtitle(): string {
+    return this.translation.isArabic
+      ? 'ابحث بالاسم أو التصنيف وشاهد النتائج فوراً بدون مغادرة الصفحة.'
+      : 'Search by name, category, or description and preview matching pieces instantly.';
+  }
+
+  get clearSearchLabel(): string {
+    return this.translation.isArabic ? 'مسح' : 'Clear';
+  }
+
+  get allCategoriesLabel(): string {
+    return this.translation.isArabic ? 'الكل' : 'All';
+  }
+
+  get noSearchResultsLabel(): string {
+    return this.translation.isArabic ? 'لا توجد منتجات مطابقة حالياً.' : 'No matching products right now.';
+  }
+
+  get locationEyebrow(): string {
+    return this.translation.isArabic ? 'موقع الفرع' : 'Store location';
+  }
+
+  get locationTitle(): string {
+    return this.translation.isArabic ? 'زور Moon Store على الخريطة' : 'Visit Moon Store on the map';
+  }
+
+  get locationSubtitle(): string {
+    return this.translation.isArabic
+      ? 'افتح الموقع مباشرة على Google Maps للوصول للفرع بسهولة.'
+      : 'Open the exact location in Google Maps and get directions to the branch.';
+  }
+
+  get locationActionLabel(): string {
+    return this.translation.isArabic ? 'افتح الاتجاهات' : 'Open directions';
+  }
+
+  get categoryOptions(): string[] {
+    return Array.from(new Set(
+      this.products
+        .map(product => product.category?.trim())
+        .filter((category): category is string => Boolean(category))
+    ));
+  }
+
+  get isSearchActive(): boolean {
+    return this.searchQuery.trim().length > 0 || this.selectedSearchCategory !== 'all';
+  }
+
+  get filteredSearchProducts(): Product[] {
+    const query = this.searchQuery.trim().toLowerCase();
+    const category = this.selectedSearchCategory.toLowerCase();
+
+    return this.products.filter(product => {
+      const matchesCategory = this.selectedSearchCategory === 'all'
+        || (product.category || '').toLowerCase() === category;
+      const searchableText = [
+        product.name,
+        product.description,
+        product.category,
+        ...(product.sizes || []),
+        ...(product.colors || [])
+      ].join(' ').toLowerCase();
+      const matchesQuery = !query || searchableText.includes(query);
+
+      return matchesCategory && matchesQuery;
+    });
+  }
+
+  selectSearchCategory(category: string) {
+    this.selectedSearchCategory = category;
+  }
+
+  clearSearch() {
+    this.searchQuery = '';
+    this.selectedSearchCategory = 'all';
   }
 
   getImgUrl(url: string | undefined): string {
@@ -156,13 +267,13 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
     this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     this.camera.position.z = 5;
 
-    this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, powerPreference: 'high-performance' });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, window.innerWidth < 768 ? 1 : 1.35));
     container.appendChild(this.renderer.domElement);
 
     const particlesGeometry = new THREE.BufferGeometry();
-    const particleCount = 700;
+    const particleCount = window.innerWidth < 768 ? 170 : 320;
     const positions = new Float32Array(particleCount * 3);
 
     for (let index = 0; index < positions.length; index++) {
@@ -172,7 +283,7 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
     particlesGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     const starTexture = this.createStarTexture();
     const material = new THREE.PointsMaterial({
-      size: 0.08,
+      size: window.innerWidth < 768 ? 0.065 : 0.075,
       color: 0x9b8ec7,
       map: starTexture,
       alphaMap: starTexture,
@@ -185,10 +296,18 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
     this.particles = new THREE.Points(particlesGeometry, material);
     this.scene.add(this.particles);
 
-    const animate = () => {
+    let lastRenderTime = 0;
+    const frameInterval = 1000 / 24;
+
+    const animate = (time = 0) => {
       this.animationFrameId = requestAnimationFrame(animate);
-      this.particles.rotation.y += 0.001;
-      this.particles.rotation.x += 0.0005;
+      if (time - lastRenderTime < frameInterval) {
+        return;
+      }
+
+      lastRenderTime = time;
+      this.particles.rotation.y += 0.00028;
+      this.particles.rotation.x += 0.00012;
 
       const isDark = document.body.classList.contains('dark');
       (this.particles.material as THREE.PointsMaterial).color.setHex(isDark ? 0x9b8ec7 : 0x222222);

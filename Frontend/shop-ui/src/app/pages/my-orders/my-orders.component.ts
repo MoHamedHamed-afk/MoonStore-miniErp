@@ -32,12 +32,10 @@ import { assetUrl } from '../../core/api.config';
               <div
                 class="order-status"
                 [class.pending]="order.status === 'Pending'"
-                [class.shipped]="order.status === 'Shipped'"
-                [class.delivered]="order.status === 'Delivered'"
-                [class.cancelled]="order.status === 'Cancelled'"
-                [class.return-requested]="order.status === 'ReturnRequested'"
-                [class.refunded]="order.status === 'Refunded'">
-                {{ translation.t('status.' + order.status) }}
+                [class.accepted]="order.status === 'Accepted'"
+                [class.rejected]="order.status === 'Rejected'"
+                [class.completed]="order.status === 'Completed'">
+                {{ statusLabel(order.status) }}
               </div>
             </div>
 
@@ -47,12 +45,18 @@ import { assetUrl } from '../../core/api.config';
                 <div class="item-copy">
                   <strong>{{ item.productName }}</strong>
                   <span>{{ translation.t('myOrders.qtyPrice', { quantity: item.quantity, price: item.unitPrice }) }}</span>
+                  <span class="variant-line" *ngIf="item.selectedSize || item.selectedColor">
+                    <ng-container *ngIf="item.selectedSize">Size {{ item.selectedSize }}</ng-container>
+                    <ng-container *ngIf="item.selectedSize && item.selectedColor"> · </ng-container>
+                    <ng-container *ngIf="item.selectedColor">Color {{ item.selectedColor }}</ng-container>
+                  </span>
                 </div>
               </div>
             </div>
 
             <div class="order-footer">
               <div class="order-meta">
+                <span>{{ order.storeName || ('Store #' + order.storeId) }}</span>
                 <span>{{ order.address }}</span>
                 <strong>\${{ order.totalAmount }}</strong>
               </div>
@@ -63,12 +67,6 @@ import { assetUrl } from '../../core/api.config';
                   class="btn cancel-btn"
                   (click)="cancelOrder(order.id!)">
                   {{ translation.t('myOrders.cancel') }}
-                </button>
-                <button
-                  *ngIf="order.status === 'Delivered'"
-                  class="btn return-btn"
-                  (click)="requestReturn(order.id!)">
-                  {{ translation.t('myOrders.requestReturn') }}
                 </button>
               </div>
             </div>
@@ -106,16 +104,15 @@ import { assetUrl } from '../../core/api.config';
     .order-date { opacity: .7; font-size: .92rem; }
     .order-status { padding: 8px 14px; border-radius: 999px; font-weight: 700; font-size: .85rem; }
     .pending { background: rgba(241,196,15,.18); color: #f1c40f; }
-    .shipped { background: rgba(52,152,219,.16); color: #4ea6db; }
-    .delivered { background: rgba(46,204,113,.16); color: #44d486; }
-    .cancelled { background: rgba(255,107,107,.16); color: #ff6b6b; }
-    .return-requested { background: rgba(155,142,199,.18); color: #b8a8f5; }
-    .refunded { background: rgba(111,230,183,.16); color: #57d8a3; }
+    .accepted { background: rgba(52,152,219,.16); color: #4ea6db; }
+    .rejected { background: rgba(255,107,107,.16); color: #ff6b6b; }
+    .completed { background: rgba(46,204,113,.16); color: #44d486; }
     .order-items { display: grid; gap: 12px; margin-bottom: 18px; }
     .item-row { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 18px; background: rgba(255,255,255,.05); }
     .item-row img { width: 58px; height: 58px; object-fit: contain; border-radius: 14px; background: rgba(255,255,255,.05); padding: 6px; }
     .item-copy { display: flex; flex-direction: column; gap: 4px; }
     .item-copy span { opacity: .72; font-size: .92rem; }
+    .variant-line { color: var(--secondary-accent); }
     .order-footer { padding-top: 14px; border-top: 1px solid rgba(255,255,255,.08); align-items: flex-start; }
     .order-meta { display: grid; gap: 8px; }
     .order-meta span { opacity: .78; }
@@ -174,6 +171,16 @@ export class MyOrdersComponent implements OnInit {
       },
       error: () => this.toastService.show(this.translation.t('myOrders.actions.returnFailed'), 'error')
     });
+  }
+
+  statusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      Pending: 'Pending',
+      Accepted: 'Accepted',
+      Rejected: 'Rejected',
+      Completed: 'Completed'
+    };
+    return labels[status] || status;
   }
 
   getImgUrl(url: string | undefined): string {

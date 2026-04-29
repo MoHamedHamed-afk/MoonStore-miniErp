@@ -7,6 +7,16 @@ export interface User {
   id: number;
   username: string;
   role: string;
+  assignedStoreId?: number | null;
+}
+
+export interface ModeratorPayload {
+  username: string;
+  password?: string;
+  email?: string;
+  phoneNumber?: string;
+  assignedStoreId: number;
+  isActive?: boolean;
 }
 
 @Injectable({
@@ -36,7 +46,9 @@ export class AuthService {
       const id = Number(payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'] || payload.nameid || payload.sub || 0);
       const role = payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || payload.role || 'User';
       const username = payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'] || payload.unique_name || payload.sub || 'User';
-      this.currentUserSubject.next({ id, username, role });
+      const assignedStoreIdValue = payload.assignedStoreId;
+      const assignedStoreId = assignedStoreIdValue ? Number(assignedStoreIdValue) : null;
+      this.currentUserSubject.next({ id, username, role, assignedStoreId });
     } catch (e) {
       this.currentUserSubject.next(null);
     }
@@ -60,6 +72,30 @@ export class AuthService {
 
   register(credentials: any): Observable<any> {
     return this.http.post(`${this.apiUrl}/register`, credentials);
+  }
+
+  getModerators(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/moderators`, {
+      headers: { Authorization: `Bearer ${this.getToken()}` }
+    });
+  }
+
+  createModerator(payload: ModeratorPayload): Observable<any> {
+    return this.http.post(`${this.apiUrl}/moderators`, payload, {
+      headers: { Authorization: `Bearer ${this.getToken()}` }
+    });
+  }
+
+  updateModerator(id: number, payload: ModeratorPayload): Observable<any> {
+    return this.http.put(`${this.apiUrl}/moderators/${id}`, payload, {
+      headers: { Authorization: `Bearer ${this.getToken()}` }
+    });
+  }
+
+  deactivateModerator(id: number): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/moderators/${id}`, {
+      headers: { Authorization: `Bearer ${this.getToken()}` }
+    });
   }
 
   getToken(): string | null {

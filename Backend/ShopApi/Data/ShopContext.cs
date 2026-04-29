@@ -15,15 +15,25 @@ public class ShopContext : DbContext
     public DbSet<Favorite> Favorites { get; set; }
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
+    public DbSet<Store> Stores { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Product>()
+            .Ignore(product => product.Sizes)
+            .Ignore(product => product.Colors)
+            .Ignore(product => product.AvailableStoreIds);
 
         modelBuilder.Entity<Order>()
             .HasMany(o => o.Items)
             .WithOne(i => i.Order)
             .HasForeignKey(i => i.OrderId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<CartItem>()
+            .HasIndex(item => new { item.UserId, item.ProductId, item.SelectedSize, item.SelectedColor })
+            .IsUnique();
     }
 }

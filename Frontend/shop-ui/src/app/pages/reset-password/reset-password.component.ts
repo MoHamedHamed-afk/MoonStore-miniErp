@@ -17,8 +17,8 @@ import { apiUrl } from '../../core/api.config';
         <h2>{{ translation.t('reset.title') }}</h2>
         <form (ngSubmit)="onSubmit()">
           <div class="form-group">
-            <label>{{ translation.t('reset.newPassword') }}</label>
-            <input type="password" [(ngModel)]="newPassword" name="newPassword" class="form-control" required>
+            <label for="reset-new-password">{{ translation.t('reset.newPassword') }}</label>
+            <input id="reset-new-password" type="password" [(ngModel)]="newPassword" name="newPassword" class="form-control" autocomplete="new-password" required>
           </div>
           <button type="submit" class="btn submit-btn">{{ translation.t('reset.submit') }}</button>
         </form>

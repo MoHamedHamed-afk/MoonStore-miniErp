@@ -23,14 +23,14 @@ import { TranslationService } from '../../services/translation.service';
         <h2>{{ translation.t('login.title') }}</h2>
         <form (ngSubmit)="onSubmit()">
           <div class="form-group">
-            <label>{{ translation.t('login.username') }}</label>
-            <input type="text" [(ngModel)]="credentials.username" name="username" class="form-control" required>
+            <label for="login-username">{{ translation.t('login.username') }}</label>
+            <input id="login-username" type="text" [(ngModel)]="credentials.username" name="username" class="form-control" autocomplete="username" required>
           </div>
 
           <div class="form-group">
-            <label>{{ translation.t('login.password') }}</label>
+            <label for="login-password">{{ translation.t('login.password') }}</label>
             <div class="password-field">
-              <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="credentials.password" name="password" class="form-control" required>
+              <input id="login-password" [type]="showPassword ? 'text' : 'password'" [(ngModel)]="credentials.password" name="password" class="form-control" autocomplete="current-password" required>
               <button
                 type="button"
                 class="toggle-password"

@@ -38,3 +38,4 @@ Frontend/shop-ui/.angular/
 *.tmp
 tmp/
 temp/
+backups/

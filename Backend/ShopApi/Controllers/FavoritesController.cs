@@ -24,7 +24,11 @@ public class FavoritesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Favorite>>> GetFavorites()
     {
-        return await _context.Favorites.Include(f => f.Product).Where(f => f.UserId == GetUserId()).ToListAsync();
+        return await _context.Favorites
+            .AsNoTracking()
+            .Include(f => f.Product)
+            .Where(f => f.UserId == GetUserId())
+            .ToListAsync();
     }
 
     [HttpPost("{productId}")]

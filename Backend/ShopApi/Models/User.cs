@@ -7,6 +7,9 @@ public class User
     public required string PasswordHash { get; set; }
     public string? Email { get; set; }
     public string? PhoneNumber { get; set; }
+    public string Role { get; set; } = "User";
+    public int? AssignedStoreId { get; set; }
+    public bool IsActive { get; set; } = true;
 }
 
 public class AdminCustomerDto
@@ -16,6 +19,9 @@ public class AdminCustomerDto
     public string? Email { get; set; }
     public string? PhoneNumber { get; set; }
     public string Role { get; set; } = "User";
+    public int? AssignedStoreId { get; set; }
+    public string? AssignedStoreName { get; set; }
+    public bool IsActive { get; set; } = true;
     public int OrdersCount { get; set; }
     public decimal TotalSpent { get; set; }
     public DateTime? LatestOrderDate { get; set; }
@@ -34,6 +40,16 @@ public class UserRegisterDto
     public required string Password { get; set; }
     public required string Email { get; set; }
     public string? PhoneNumber { get; set; }
+}
+
+public class ModeratorRequestDto
+{
+    public required string Username { get; set; }
+    public string? Password { get; set; }
+    public string? Email { get; set; }
+    public string? PhoneNumber { get; set; }
+    public int AssignedStoreId { get; set; }
+    public bool IsActive { get; set; } = true;
 }
 
 public class ForgotPasswordDto
