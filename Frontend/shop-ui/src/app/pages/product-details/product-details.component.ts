@@ -13,23 +13,23 @@ import { assetUrl } from '../../core/api.config';
   standalone: true,
   imports: [CommonModule, RouterModule],
   template: `
-    <div class="container" style="padding-top: 120px; min-height: 100vh;" *ngIf="product">
-      <div class="glass" style="display: flex; flex-wrap: wrap; padding: 40px; border-radius: 24px; gap: 40px;">
-        <div style="flex: 1; min-width: 300px;">
-          <img [src]="imageUrl" [alt]="product.name" style="width: 100%; border-radius: 16px;">
+    <div class="container product-details-page" style="padding-top: 120px; min-height: 100vh;" *ngIf="product">
+      <div class="glass product-details-card" style="display: flex; flex-wrap: wrap; padding: 40px; border-radius: 24px; gap: 40px;">
+        <div class="product-media" style="flex: 1; min-width: 300px;">
+          <img [src]="imageUrl" [alt]="product.name" loading="eager" decoding="async" style="width: 100%; border-radius: 16px;">
         </div>
-        <div style="flex: 1; min-width: 300px; display: flex; flex-direction: column; justify-content: center;">
+        <div class="product-copy" style="flex: 1; min-width: 300px; display: flex; flex-direction: column; justify-content: center;">
           <h1 style="font-size: 3rem; margin-bottom: 20px;">{{ product.name }}</h1>
-          <p style="font-size: 1.2rem; margin-bottom: 30px; opacity: 0.8;">{{ product.description }}</p>
-          <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary-accent); margin-bottom: 16px;">\${{ product.price }}</div>
-          <div style="display: grid; gap: 14px; margin-bottom: 22px;">
-            <div *ngIf="product.sizes?.length" style="display: grid; gap: 8px;">
+          <p class="product-description" style="font-size: 1.2rem; margin-bottom: 30px; opacity: 0.8;">{{ product.description }}</p>
+          <div class="product-price" style="font-size: 2.5rem; font-weight: 800; color: var(--primary-accent); margin-bottom: 16px;">\${{ product.price }}</div>
+          <div class="variant-info" style="display: grid; gap: 14px; margin-bottom: 22px;">
+            <div class="variant-group" *ngIf="product.sizes?.length" style="display: grid; gap: 8px;">
               <strong>Available sizes</strong>
               <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <span *ngFor="let size of product.sizes" style="font-size: .9rem; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.08); border: 1px solid var(--glass-border);">{{ size }}</span>
               </div>
             </div>
-            <div *ngIf="product.colors?.length" style="display: grid; gap: 8px;">
+            <div class="variant-group" *ngIf="product.colors?.length" style="display: grid; gap: 8px;">
               <strong>Available colors</strong>
               <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <span *ngFor="let color of product.colors" style="font-size: .9rem; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,.08); border: 1px solid var(--glass-border);">{{ color }}</span>
@@ -45,7 +45,7 @@ import { assetUrl } from '../../core/api.config';
               : translation.t('product.outOfStock') }}
           </div>
 
-          <div style="display: flex; gap: 20px;">
+          <div class="product-actions" style="display: flex; gap: 20px;">
             <button class="btn" style="flex: 1; padding: 15px; font-size: 1.2rem; display: flex; justify-content: center; align-items: center; gap: 10px;" (click)="addToCart()" [disabled]="(product.stockQuantity || 0) <= 0">
               <span>&#128722;</span> {{ translation.t('product.addToCart') }}
             </button>
@@ -56,7 +56,23 @@ import { assetUrl } from '../../core/api.config';
         </div>
       </div>
     </div>
-  `
+  `,
+  styles: [`
+    @media (max-width: 720px) {
+      .product-details-page { padding-top: 96px !important; }
+      .product-details-card { padding: 18px !important; gap: 22px !important; border-radius: 22px !important; }
+      .product-media, .product-copy { min-width: 0 !important; flex-basis: 100% !important; }
+      .product-media img { max-height: 360px; object-fit: contain; background: rgba(255, 255, 255, .055); }
+      .product-copy h1 { font-size: clamp(2rem, 11vw, 2.65rem) !important; margin-bottom: 14px !important; overflow-wrap: anywhere; }
+      .product-description { font-size: 1rem !important; margin-bottom: 18px !important; line-height: 1.65; }
+      .product-price { font-size: 2rem !important; }
+      .variant-info { gap: 12px !important; margin-bottom: 18px !important; }
+      .variant-group span { min-height: 38px; display: inline-flex; align-items: center; }
+      .product-actions { position: sticky; bottom: 12px; z-index: 4; display: grid !important; grid-template-columns: 1fr 56px; gap: 10px !important; padding: 10px; margin: 0 -10px -10px; border-radius: 18px; background: rgba(12, 13, 22, .72); backdrop-filter: blur(16px); }
+      :host-context(body:not(.dark)) .product-actions { background: rgba(255, 255, 255, .78); }
+      .product-actions .btn { min-height: 50px; padding: 12px !important; font-size: 1rem !important; }
+    }
+  `]
 })
 export class ProductDetailsComponent implements OnInit {
   product: Product | undefined;

@@ -133,9 +133,21 @@ import { assetUrl } from '../../core/api.config';
     .retry-btn { background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent)); }
     @media (max-width: 640px) {
       .orders-shell { padding-top: 96px; }
+      .orders-layout { gap: 16px; }
+      .orders-hero, .order-card, .empty-state { border-radius: 22px; }
+      .orders-hero { padding: 20px; }
+      .orders-hero h1 { font-size: clamp(2rem, 11vw, 2.55rem); }
+      .order-card { padding: 16px; }
       .order-header, .order-footer { flex-direction: column; align-items: flex-start; }
+      .order-status { align-self: flex-start; }
+      .item-row { align-items: flex-start; gap: 12px; padding: 10px; }
+      .item-row img { width: 52px; height: 52px; flex: 0 0 auto; }
+      .item-copy { min-width: 0; }
+      .item-copy strong, .order-meta span { overflow-wrap: anywhere; }
+      .order-meta { width: 100%; }
       .order-actions { width: 100%; }
-      .order-actions .btn { width: 100%; }
+      .order-actions .btn { width: 100%; min-height: 46px; }
+      .retry-btn { width: 100%; min-height: 46px; }
     }
   `]
 })

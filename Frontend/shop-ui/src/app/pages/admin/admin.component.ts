@@ -759,13 +759,32 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
       .product-row .row-actions { grid-column: 1 / -1; }
     }
     @media (max-width: 560px) {
-      .dashboard-nav { align-items: flex-start; flex-direction: column; }
+      .admin-shell { padding: 10px; overflow: visible; }
+      .dashboard-nav { align-items: flex-start; flex-direction: column; padding: 12px; border-radius: 22px; }
+      .hero-card { padding: 18px; }
+      .hero-card h1 { font-size: clamp(2rem, 12vw, 2.55rem); overflow-wrap: anywhere; }
+      .role-pill { width: 100%; align-items: flex-start; }
+      .tabs { position: sticky; top: 8px; z-index: 20; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; }
+      .tabs button { min-height: 46px; justify-content: center; padding: 10px; }
+      .stats-grid strong { font-size: 1.85rem; }
+      .editor-card, .orders-panel { padding: 16px; }
+      .editor-card h2, .orders-panel h2 { font-size: 1.35rem; }
       .form-row, .stats-grid, .filter-card { grid-template-columns: 1fr; }
       .product-row, .moderator-row { grid-template-columns: 1fr; }
       .product-row img { width: 100%; height: 160px; }
       .order-items div { flex-direction: column; }
       .nav-actions, .button-row, .row-actions, .order-actions, .tabs { width: 100%; }
-      .nav-actions button, .button-row button, .row-actions button, .order-actions button, .tabs button { flex: 1; }
+      .nav-actions button, .button-row button, .row-actions button, .order-actions button, .tabs button { flex: 1; min-height: 46px; }
+      .nav-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+      .nav-actions .danger { grid-column: 1 / -1; }
+      .button-row, .row-actions, .order-actions { display: grid; grid-template-columns: 1fr; }
+      .order-card { padding: 14px; border-radius: 20px; }
+      .order-bottom { gap: 10px; }
+      .order-bottom span, .order-items span, .product-row p, .product-row small, .moderator-row p { overflow-wrap: anywhere; }
+      input, textarea, select { min-height: 46px; font-size: 16px; }
+      .store-picker { gap: 8px; }
+      .checkbox-pill, .inline-check { min-height: 42px; }
+      .confirm-card { padding: 18px; }
     }
   `]
 })

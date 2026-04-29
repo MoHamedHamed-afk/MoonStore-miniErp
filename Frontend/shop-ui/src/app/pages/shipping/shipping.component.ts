@@ -143,7 +143,9 @@ import * as THREE from 'three';
               <strong>\${{ totalAmount }}</strong>
             </div>
 
-            <button type="submit" class="btn submit-btn" [disabled]="shippingForm.invalid || totalAmount <= 0">{{ translation.t('shipping.confirm') }}</button>
+            <button type="submit" class="btn submit-btn" [disabled]="shippingForm.invalid || totalAmount <= 0 || isSubmitting">
+              {{ isSubmitting ? 'Confirming...' : translation.t('shipping.confirm') }}
+            </button>
           </form>
 
           <div *ngIf="success" class="success-state">
@@ -400,10 +402,27 @@ import * as THREE from 'three';
     @media (max-width: 640px) {
       .shipping-shell { padding-top: 96px; }
       .form-grid { grid-template-columns: 1fr; }
-      .shipping-visual { min-height: 340px; padding: 28px; }
+      .shipping-card { padding: 20px; border-radius: 22px; }
+      .shipping-card h2 { font-size: 1.65rem; margin-bottom: 18px; }
+      .payment-note { margin: -4px 0 18px; padding: 14px; }
+      .shipping-visual { min-height: 300px; padding: 24px; border-radius: 22px; }
       .visual-carousel { inset: 10px; }
       .visual-model { top: 3%; height: min(86%, 260px); max-width: 68%; }
       .visual-model.previous { opacity: 0.18; }
+      .variant-section { padding: 12px; }
+      .variant-card { grid-template-columns: 52px 1fr; padding: 10px; }
+      .variant-card img { width: 52px; height: 52px; }
+      .variant-card label { grid-column: 1 / -1; }
+      .variant-card select, .field input, .field textarea { min-height: 46px; font-size: 16px; }
+      .order-summary { position: sticky; bottom: 76px; z-index: 4; margin: 20px 0 12px; padding: 14px 16px; backdrop-filter: blur(14px); }
+      .submit-btn { position: sticky; bottom: 12px; z-index: 5; min-height: 52px; }
+    }
+    @media (max-width: 430px) {
+      .shipping-layout { gap: 18px; }
+      .shipping-visual { min-height: 260px; }
+      .visual-copy h2 { font-size: 1.75rem; }
+      .visual-copy p { font-size: .95rem; }
+      .moon-orbit { opacity: .75; }
     }
   `]
 })
@@ -435,6 +454,7 @@ export class ShippingComponent implements AfterViewInit, OnDestroy {
   };
   success = false;
   cartItems: CartItem[] = [];
+  isSubmitting = false;
 
   private renderer!: THREE.WebGLRenderer;
   private scene!: THREE.Scene;
@@ -495,12 +515,18 @@ export class ShippingComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
+    if (this.isSubmitting) {
+      return;
+    }
+
     const fullAddress = [
       this.form.address,
       `${this.form.area}, ${this.form.city}`,
       `Apt/Building: ${this.form.apartment}`,
       `Postal Code: ${this.form.postalCode}`
     ].join(' | ');
+
+    this.isSubmitting = true;
 
     this.orderService.createOrder({
       customerName: this.form.name,
@@ -517,12 +543,23 @@ export class ShippingComponent implements AfterViewInit, OnDestroy {
       }))
     }).subscribe({
       next: () => {
-        this.cartService.clearCart().subscribe(() => {
-          this.success = true;
-          this.cartItems = [];
+        this.cartService.clearCart().subscribe({
+          next: () => {
+            this.success = true;
+            this.cartItems = [];
+            this.isSubmitting = false;
+          },
+          error: () => {
+            this.success = true;
+            this.cartItems = [];
+            this.isSubmitting = false;
+          }
         });
       },
-      error: error => this.toastService.show(this.getOrderError(error), 'error')
+      error: error => {
+        this.isSubmitting = false;
+        this.toastService.show(this.getOrderError(error), 'error');
+      }
     });
   }
 
