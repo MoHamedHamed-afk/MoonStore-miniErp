@@ -18,6 +18,7 @@ import {
   faGlobe,
   faMoon,
   faSave,
+  faServer,
   faStore,
   faSun,
   faTimes,
@@ -64,6 +65,11 @@ const dashboardLabels = {
     pendingOrders: 'Pending Orders',
     completedOrders: 'Completed Orders',
     stores: 'Stores',
+    apiStatus: 'API Status',
+    apiOnline: 'Online',
+    apiOffline: 'Offline',
+    apiChecking: 'Checking...',
+    apiOfflineHint: 'Backend is sleeping or unreachable. Try refresh in a moment.',
     editProduct: 'Edit Product',
     addProduct: 'Add Product',
     productName: 'Product Name',
@@ -75,6 +81,8 @@ const dashboardLabels = {
     colors: 'Colors',
     availableStores: 'Available in stores',
     productImage: 'Product Image',
+    uploadSuccess: 'Image uploaded to Cloudinary.',
+    viewUploadedImage: 'View uploaded image',
     saveChanges: 'Save Changes',
     cancel: 'Cancel',
     uncategorized: 'Uncategorized',
@@ -148,6 +156,11 @@ const dashboardLabels = {
     pendingOrders: 'طلبات منتظرة',
     completedOrders: 'طلبات مكتملة',
     stores: 'الفروع',
+    apiStatus: 'حالة الخادم',
+    apiOnline: 'متصل',
+    apiOffline: 'غير متصل',
+    apiChecking: 'جاري التحقق...',
+    apiOfflineHint: 'الخادم نائم أو غير متاح حالياً. حاول التحديث بعد قليل.',
     editProduct: 'تعديل منتج',
     addProduct: 'إضافة منتج',
     productName: 'اسم المنتج',
@@ -159,6 +172,8 @@ const dashboardLabels = {
     colors: 'الألوان',
     availableStores: 'متاح في الفروع',
     productImage: 'صورة المنتج',
+    uploadSuccess: 'تم رفع الصورة إلى Cloudinary.',
+    viewUploadedImage: 'عرض الصورة المرفوعة',
     saveChanges: 'حفظ التعديل',
     cancel: 'إلغاء',
     uncategorized: 'بدون تصنيف',
@@ -303,6 +318,12 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
             <span>{{ label('stores') }}</span>
             <strong>{{ stores.length }}</strong>
           </article>
+          <article [class.api-offline]="apiStatus === 'offline'">
+            <fa-icon class="stat-icon" [icon]="icons.server"></fa-icon>
+            <span>{{ label('apiStatus') }}</span>
+            <strong>{{ apiStatusLabel }}</strong>
+            <small *ngIf="apiStatus === 'offline'">{{ label('apiOfflineHint') }}</small>
+          </article>
         </section>
 
         <section class="panel-grid" *ngIf="activeTab === 'products' && isAdmin">
@@ -364,6 +385,9 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
             </label>
 
             <img *ngIf="productForm.imageUrl" class="preview-image" [src]="getImgUrl(productForm.imageUrl)" alt="Product preview">
+            <a *ngIf="lastUploadedImageUrl" class="upload-link" [href]="lastUploadedImageUrl" target="_blank" rel="noopener">
+              {{ label('viewUploadedImage') }}
+            </a>
 
             <div class="button-row">
               <button class="primary-btn" type="submit" [disabled]="isSavingProduct"><fa-icon class="btn-icon" [icon]="icons.save"></fa-icon>{{ isSavingProduct ? 'Saving...' : (editingProductId ? label('saveChanges') : label('addProduct')) }}</button>
@@ -619,6 +643,7 @@ export class AdminComponent implements OnInit {
     refresh: faArrowRotateRight,
     reject: faTimes,
     save: faSave,
+    server: faServer,
     shop: faStore,
     sun: faSun
   };
@@ -646,6 +671,8 @@ export class AdminComponent implements OnInit {
   isLoadingModerators = false;
   isSavingProduct = false;
   isUploadingImage = false;
+  apiStatus: 'checking' | 'online' | 'offline' = 'checking';
+  lastUploadedImageUrl = '';
   deletingProductIds = new Set<number>();
   updatingOrderIds = new Set<number>();
   productsError = '';
@@ -684,6 +711,7 @@ export class AdminComponent implements OnInit {
       this.activeTab = 'orders';
     }
 
+    this.checkApiHealth();
     this.loadStores();
     this.loadOrders();
 
@@ -699,6 +727,16 @@ export class AdminComponent implements OnInit {
 
   get isModerator(): boolean {
     return this.currentUser?.role === 'Moderator';
+  }
+
+  get apiStatusLabel(): string {
+    if (this.apiStatus === 'online') {
+      return this.label('apiOnline');
+    }
+    if (this.apiStatus === 'offline') {
+      return this.label('apiOffline');
+    }
+    return this.label('apiChecking');
   }
 
   get filteredProducts(): Product[] {
@@ -796,6 +834,18 @@ export class AdminComponent implements OnInit {
 
   setTab(tab: DashboardTab): void {
     this.activeTab = this.isModerator ? 'orders' : tab;
+  }
+
+  checkApiHealth(): void {
+    this.apiStatus = 'checking';
+    this.http.get<{ status: string }>(apiUrl('/health')).subscribe({
+      next: () => {
+        this.apiStatus = 'online';
+      },
+      error: () => {
+        this.apiStatus = 'offline';
+      }
+    });
   }
 
   loadStores(): void {
@@ -936,13 +986,16 @@ export class AdminComponent implements OnInit {
     formData.append('file', file);
 
     this.isUploadingImage = true;
-    this.http.post<{ Url?: string; url?: string }>(apiUrl('/api/uploads'), formData, {
+    this.lastUploadedImageUrl = '';
+    this.http.post<{ Url?: string; url?: string; Provider?: string; provider?: string }>(apiUrl('/api/uploads'), formData, {
       headers: { Authorization: `Bearer ${this.authService.getToken()}` }
     }).subscribe({
       next: response => {
         this.productForm.imageUrl = response.Url || response.url || this.productForm.imageUrl;
+        this.lastUploadedImageUrl = this.getImgUrl(this.productForm.imageUrl);
         this.isUploadingImage = false;
-        this.toastService.show('Image uploaded.', 'success');
+        const provider = response.Provider || response.provider || 'Cloudinary';
+        this.toastService.show(`${this.label('uploadSuccess')} (${provider})`, 'success');
       },
       error: error => {
         this.isUploadingImage = false;
@@ -957,6 +1010,7 @@ export class AdminComponent implements OnInit {
     this.productForm = this.createBlankProduct();
     this.sizesInput = 'S, M, L, XL';
     this.colorsInput = 'Black, White';
+    this.lastUploadedImageUrl = '';
   }
 
   updateOrder(order: Order, status: 'Pending' | 'Accepted' | 'Rejected' | 'Completed' | 'Cancelled'): void {

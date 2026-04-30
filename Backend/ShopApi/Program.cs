@@ -73,7 +73,17 @@ builder.Services.AddCors(options =>
 });
 
 // Configure JWT Authentication
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "super_secret_key_that_is_long_enough_1234567890!";
+var jwtKey = builder.Configuration["Jwt:Key"];
+if (string.IsNullOrWhiteSpace(jwtKey))
+{
+    if (!builder.Environment.IsDevelopment())
+    {
+        throw new InvalidOperationException("Jwt:Key must be configured outside Development.");
+    }
+
+    jwtKey = "moon-store-local-development-jwt-key-change-me";
+    builder.Configuration["Jwt:Key"] = jwtKey;
+}
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -96,7 +106,7 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ShopContext>();
     context.Database.Migrate();
-    await DatabaseSeeder.SeedAsync(context);
+    await DatabaseSeeder.SeedAsync(context, builder.Configuration);
 }
 
 // Configure the HTTP request pipeline.

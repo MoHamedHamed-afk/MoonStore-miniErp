@@ -210,6 +210,10 @@
             </div>
           </article>
         </ng-container>
+
+        <div class="glass search-empty" *ngIf="winterProducts.length === 0">
+          {{ productsError || noProductsLabel }}
+        </div>
       </div>
 
       <div class="pagination" *ngIf="winterProducts.length > pageSize">
@@ -274,6 +278,10 @@
             </div>
           </article>
         </ng-container>
+
+        <div class="glass search-empty" *ngIf="summerProducts.length === 0">
+          {{ productsError || noProductsLabel }}
+        </div>
       </div>
 
       <div class="pagination" *ngIf="summerProducts.length > pageSize">

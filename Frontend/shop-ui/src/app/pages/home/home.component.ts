@@ -47,6 +47,7 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
   products: Product[] = [];
   summerProducts: Product[] = [];
   winterProducts: Product[] = [];
+  productsError = '';
   searchQuery = '';
   selectedSearchCategory = 'all';
   readonly pageSize = 10;
@@ -161,6 +162,14 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
     return this.translation.isArabic ? 'لا توجد منتجات مطابقة حالياً.' : 'No matching products right now.';
   }
 
+  get noProductsLabel(): string {
+    return this.translation.isArabic ? 'لا توجد منتجات متاحة حالياً.' : 'No products available right now.';
+  }
+
+  get productsLoadErrorLabel(): string {
+    return this.translation.isArabic ? 'تعذر تحميل المنتجات حالياً. حاول مرة أخرى بعد لحظات.' : 'Could not load products right now. Please try again in a moment.';
+  }
+
   get locationEyebrow(): string {
     return this.translation.isArabic ? 'موقع الفرع' : 'Store location';
   }
@@ -270,13 +279,15 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
   }
 
   private loadProducts() {
+    this.productsError = '';
     this.productService.getProducts().subscribe({
       next: products => {
-        this.products = products.length > 0 ? products : this.getFallbackProducts();
+        this.products = products;
         this.splitCollections();
       },
       error: () => {
-        this.products = this.getFallbackProducts();
+        this.products = [];
+        this.productsError = this.productsLoadErrorLabel;
         this.splitCollections();
       }
     });
@@ -301,20 +312,6 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
 
   private clampPage(page: number, pageCount: number): number {
     return Math.min(Math.max(page, 1), pageCount);
-  }
-
-  private getFallbackProducts(): Product[] {
-    return [
-      { id: 1, name: 'Premium 3D Hoodie', description: 'Trendy streetwear hoodie floating in mid-air.', price: 120, imageUrl: 'assets/images/premium_3d_hoodie.png', category: 'Winter' },
-      { id: 2, name: 'Futuristic Sneakers', description: 'A pair of premium, futuristic trendy sneakers.', price: 250, imageUrl: 'assets/images/premium_3d_sneakers.png', category: 'Summer' },
-      { id: 3, name: 'Modern Puffer Jacket', description: 'Premium, stylish modern jacket or puffer coat.', price: 340, imageUrl: 'assets/images/premium_3d_jacket.png', category: 'Winter' },
-      { id: 4, name: 'Summer Vintage Shirt', description: 'Lightweight vintage-style summer shirt.', price: 65, imageUrl: 'assets/images/placeholder.png', category: 'Summer' },
-      { id: 5, name: 'Cargo Shorts', description: 'Premium streetwear cargo shorts.', price: 90, imageUrl: 'assets/images/placeholder.png', category: 'Summer' },
-      { id: 6, name: 'Streetwear Bucket Hat', description: 'Trendy summer bucket hat.', price: 45, imageUrl: 'assets/images/placeholder.png', category: 'Summer' },
-      { id: 7, name: 'Winter Knit Beanie', description: 'Warm winter knit beanie cap.', price: 35, imageUrl: 'assets/images/placeholder.png', category: 'Winter' },
-      { id: 8, name: 'Tactical Winter Boots', description: 'Heavy duty tactical winter boots.', price: 210, imageUrl: 'assets/images/placeholder.png', category: 'Winter' },
-      { id: 9, name: 'Designer Scarf', description: 'Premium soft designer scarf.', price: 110, imageUrl: 'assets/images/placeholder.png', category: 'Winter' }
-    ];
   }
 
   private initThreeJs() {

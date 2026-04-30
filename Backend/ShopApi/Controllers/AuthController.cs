@@ -2,8 +2,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Collections.Concurrent;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net.Mail;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using ShopApi.Data;
 using ShopApi.Models;
@@ -16,6 +19,7 @@ public class AuthController : ControllerBase
 {
     private readonly ShopContext _context;
     private readonly IConfiguration _configuration;
+    private static readonly ConcurrentDictionary<string, ResetOtpEntry> ResetOtps = new();
 
     public AuthController(ShopContext context, IConfiguration configuration)
     {
@@ -34,7 +38,13 @@ public class AuthController : ControllerBase
         }
 
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? "super_secret_key_that_is_long_enough_1234567890!");
+        var jwtKey = _configuration["Jwt:Key"];
+        if (string.IsNullOrWhiteSpace(jwtKey))
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, "JWT signing key is not configured.");
+        }
+
+        var key = Encoding.UTF8.GetBytes(jwtKey);
         
         var tokenDescriptor = new SecurityTokenDescriptor
         {
@@ -164,10 +174,15 @@ public class AuthController : ControllerBase
             return BadRequest("Username already exists");
         }
 
+        if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 6)
+        {
+            return BadRequest("Moderator password must be at least 6 characters.");
+        }
+
         var moderator = new User
         {
             Username = request.Username,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(string.IsNullOrWhiteSpace(request.Password) ? "moderator123" : request.Password),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Email = request.Email,
             PhoneNumber = request.PhoneNumber,
             Role = "Moderator",
@@ -221,41 +236,107 @@ public class AuthController : ControllerBase
     [HttpPost("forgot-password")]
     public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto forgotDto)
     {
-        var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == forgotDto.Email);
-        if (user == null)
+        var normalizedEmail = NormalizeEmail(forgotDto.Email);
+        if (normalizedEmail is null)
         {
-            // For security, don't reveal if user exists, but for this demo we'll return a mock token
-            return Ok(new { Message = "If that email exists, a reset link was sent.", MockToken = "mock-reset-token-123" });
+            return BadRequest("Please enter a valid email address.");
         }
 
-        // Return mock token directly to frontend for demonstration
-        return Ok(new { Message = "If that email exists, a reset link was sent.", MockToken = $"mock-reset-token-{user.Id}" });
+        var user = await _context.Users.FirstOrDefaultAsync(u =>
+            u.Email != null && u.Email.ToLower() == normalizedEmail);
+        if (user == null)
+        {
+            return NotFound("No account exists with this email.");
+        }
+
+        var otp = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+        ResetOtps[normalizedEmail] = new ResetOtpEntry(
+            Otp: otp,
+            UserId: user.Id,
+            ExpiresAtUtc: DateTime.UtcNow.AddMinutes(10),
+            Attempts: 0);
+
+        return Ok(new
+        {
+            Message = "OTP generated. Enter it on the reset password page.",
+            Email = user.Email,
+            Otp = otp,
+            ExpiresInMinutes = 10
+        });
     }
 
     [HttpPost("reset-password")]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto resetDto)
     {
-        // In reality, verify the token. Here, we parse the mock token format: "mock-reset-token-{userId}"
-        if (!resetDto.Token.StartsWith("mock-reset-token-"))
+        if (string.IsNullOrWhiteSpace(resetDto.NewPassword) || resetDto.NewPassword.Length < 6)
         {
-            return BadRequest("Invalid token");
+            return BadRequest("Password must be at least 6 characters.");
         }
 
-        var parts = resetDto.Token.Split('-');
-        if (parts.Length != 4 || !int.TryParse(parts[3], out int userId))
+        var normalizedEmail = NormalizeEmail(resetDto.Email);
+        if (normalizedEmail is null)
         {
-            return BadRequest("Invalid token format");
+            return BadRequest("Please enter a valid email address.");
         }
 
-        var user = await _context.Users.FindAsync(userId);
-        if (user == null)
+        if (string.IsNullOrWhiteSpace(resetDto.Otp))
         {
-            return BadRequest("Invalid token");
+            return BadRequest("Please enter the OTP.");
+        }
+
+        if (!ResetOtps.TryGetValue(normalizedEmail, out var resetOtp))
+        {
+            return BadRequest("No active reset OTP found for this email.");
+        }
+
+        if (resetOtp.ExpiresAtUtc < DateTime.UtcNow)
+        {
+            ResetOtps.TryRemove(normalizedEmail, out _);
+            return BadRequest("OTP expired. Please request a new one.");
+        }
+
+        if (resetOtp.Attempts >= 5)
+        {
+            ResetOtps.TryRemove(normalizedEmail, out _);
+            return BadRequest("Too many invalid attempts. Please request a new OTP.");
+        }
+
+        if (resetOtp.Otp != resetDto.Otp.Trim())
+        {
+            ResetOtps[normalizedEmail] = resetOtp with { Attempts = resetOtp.Attempts + 1 };
+            return BadRequest("Invalid OTP.");
+        }
+
+        var user = await _context.Users.FindAsync(resetOtp.UserId);
+        if (user == null || !string.Equals(user.Email, resetDto.Email?.Trim(), StringComparison.OrdinalIgnoreCase))
+        {
+            ResetOtps.TryRemove(normalizedEmail, out _);
+            return BadRequest("Invalid reset request.");
         }
 
         user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(resetDto.NewPassword);
         await _context.SaveChangesAsync();
+        ResetOtps.TryRemove(normalizedEmail, out _);
 
         return Ok(new { Message = "Password reset successful" });
     }
+
+    private static string? NormalizeEmail(string? email)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            return null;
+        }
+
+        try
+        {
+            return new MailAddress(email.Trim()).Address.ToLowerInvariant();
+        }
+        catch (FormatException)
+        {
+            return null;
+        }
+    }
+
+    private sealed record ResetOtpEntry(string Otp, int UserId, DateTime ExpiresAtUtc, int Attempts);
 }

@@ -59,6 +59,8 @@ public class ForgotPasswordDto
 
 public class ResetPasswordDto
 {
-    public required string Token { get; set; }
+    public string? Token { get; set; }
+    public string? Email { get; set; }
+    public string? Otp { get; set; }
     public required string NewPassword { get; set; }
 }

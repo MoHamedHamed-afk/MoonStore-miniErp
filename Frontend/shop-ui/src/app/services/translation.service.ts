@@ -82,16 +82,30 @@ const translations: Record<AppLanguage, TranslationTree> = {
     forgot: {
       title: 'Forgot Password',
       email: 'Email',
-      submit: 'Send Reset Link',
+      submit: 'Get OTP',
       backToLogin: 'Back to Login',
       processingError: 'Error processing request',
-      mockSent: 'Mock Email Sent!'
+      mockSent: 'Mock Email Sent!',
+      checking: 'Checking...',
+      enterEmail: 'Please enter your email.',
+      otpIntro: 'Your reset OTP is:',
+      otpHint: 'It expires in {{ minutes }} minutes. Enter it on the next page.',
+      continueReset: 'Continue to reset password',
+      otpGenerated: 'OTP generated.'
     },
     reset: {
       title: 'Reset Password',
+      email: 'Email',
+      otp: 'OTP',
       newPassword: 'New Password',
+      confirmPassword: 'Confirm Password',
       submit: 'Reset Password',
-      failed: 'Reset failed'
+      resetting: 'Resetting...',
+      failed: 'Reset failed',
+      enterEmail: 'Please enter your email.',
+      enterOtp: 'Please enter the OTP.',
+      passwordMin: 'Password must be at least 6 characters.',
+      passwordMismatch: 'Passwords do not match.'
     },
     favourites: {
       title: 'Your Favourites',

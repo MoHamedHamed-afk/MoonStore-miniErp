@@ -30,3 +30,9 @@ services:
         value: ShopApi
       - key: Jwt__Audience
         value: ShopApp
+      - key: Seed__AdminPassword
+        sync: false
+      - key: Seed__ModeratorPassword
+        sync: false
+      - key: Seed__BackupAdminPassword
+        sync: false
