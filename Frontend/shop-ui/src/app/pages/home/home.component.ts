@@ -308,12 +308,12 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
       { id: 1, name: 'Premium 3D Hoodie', description: 'Trendy streetwear hoodie floating in mid-air.', price: 120, imageUrl: 'assets/images/premium_3d_hoodie.png', category: 'Winter' },
       { id: 2, name: 'Futuristic Sneakers', description: 'A pair of premium, futuristic trendy sneakers.', price: 250, imageUrl: 'assets/images/premium_3d_sneakers.png', category: 'Summer' },
       { id: 3, name: 'Modern Puffer Jacket', description: 'Premium, stylish modern jacket or puffer coat.', price: 340, imageUrl: 'assets/images/premium_3d_jacket.png', category: 'Winter' },
-      { id: 4, name: 'Summer Vintage Shirt', description: 'Lightweight vintage-style summer shirt.', price: 65, imageUrl: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?q=80&w=800', category: 'Summer' },
-      { id: 5, name: 'Cargo Shorts', description: 'Premium streetwear cargo shorts.', price: 90, imageUrl: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?q=80&w=800', category: 'Summer' },
-      { id: 6, name: 'Streetwear Bucket Hat', description: 'Trendy summer bucket hat.', price: 45, imageUrl: 'https://images.unsplash.com/photo-1521369909029-2afed882ba54?q=80&w=800', category: 'Summer' },
-      { id: 7, name: 'Winter Knit Beanie', description: 'Warm winter knit beanie cap.', price: 35, imageUrl: 'https://images.unsplash.com/photo-1576871337622-98d48d1cf531?q=80&w=800', category: 'Winter' },
-      { id: 8, name: 'Tactical Winter Boots', description: 'Heavy duty tactical winter boots.', price: 210, imageUrl: 'https://images.unsplash.com/photo-1520639888713-7851133b1ed0?q=80&w=800', category: 'Winter' },
-      { id: 9, name: 'Designer Scarf', description: 'Premium soft designer scarf.', price: 110, imageUrl: 'https://images.unsplash.com/photo-1601379430166-70eeb04e2808?q=80&w=800', category: 'Winter' }
+      { id: 4, name: 'Summer Vintage Shirt', description: 'Lightweight vintage-style summer shirt.', price: 65, imageUrl: 'assets/images/placeholder.png', category: 'Summer' },
+      { id: 5, name: 'Cargo Shorts', description: 'Premium streetwear cargo shorts.', price: 90, imageUrl: 'assets/images/placeholder.png', category: 'Summer' },
+      { id: 6, name: 'Streetwear Bucket Hat', description: 'Trendy summer bucket hat.', price: 45, imageUrl: 'assets/images/placeholder.png', category: 'Summer' },
+      { id: 7, name: 'Winter Knit Beanie', description: 'Warm winter knit beanie cap.', price: 35, imageUrl: 'assets/images/placeholder.png', category: 'Winter' },
+      { id: 8, name: 'Tactical Winter Boots', description: 'Heavy duty tactical winter boots.', price: 210, imageUrl: 'assets/images/placeholder.png', category: 'Winter' },
+      { id: 9, name: 'Designer Scarf', description: 'Premium soft designer scarf.', price: 110, imageUrl: 'assets/images/placeholder.png', category: 'Winter' }
     ];
   }
 
