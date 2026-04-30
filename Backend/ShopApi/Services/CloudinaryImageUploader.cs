@@ -51,15 +51,15 @@ public class CloudinaryImageUploader
         var signaturePayload = string.Join("&", parameters.Select(pair => $"{pair.Key}={pair.Value}")) + apiSecret;
         var signature = Convert.ToHexString(SHA1.HashData(Encoding.UTF8.GetBytes(signaturePayload))).ToLowerInvariant();
 
-        await using var stream = file.OpenReadStream();
-        using var content = new MultipartFormDataContent();
-        var fileContent = new StreamContent(stream);
-        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse(file.ContentType);
-        content.Add(fileContent, "file", file.FileName);
-        content.Add(new StringContent(apiKey), "api_key");
-        content.Add(new StringContent(timestamp), "timestamp");
-        content.Add(new StringContent(folder), "folder");
-        content.Add(new StringContent(signature), "signature");
+        var fileData = await ToDataUriAsync(file, cancellationToken);
+        using var content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["file"] = fileData,
+            ["api_key"] = apiKey,
+            ["timestamp"] = timestamp,
+            ["folder"] = folder,
+            ["signature"] = signature
+        });
 
         var endpoint = $"https://api.cloudinary.com/v1_1/{cloudName}/image/upload";
         using var response = await _httpClient.PostAsync(endpoint, content, cancellationToken);
@@ -102,6 +102,14 @@ public class CloudinaryImageUploader
         return json.RootElement.TryGetProperty("secure_url", out var secureUrl)
             ? secureUrl.GetString() ?? throw new InvalidOperationException("Cloudinary did not return a secure URL.")
             : throw new InvalidOperationException("Cloudinary did not return a secure URL.");
+    }
+
+    private static async Task<string> ToDataUriAsync(IFormFile file, CancellationToken cancellationToken)
+    {
+        await using var stream = file.OpenReadStream();
+        using var memory = new MemoryStream();
+        await stream.CopyToAsync(memory, cancellationToken);
+        return $"data:{file.ContentType};base64,{Convert.ToBase64String(memory.ToArray())}";
     }
 
     private string? GetSetting(string dotNetKey, string environmentKey)
