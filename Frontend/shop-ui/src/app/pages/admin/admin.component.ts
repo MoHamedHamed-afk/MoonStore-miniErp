@@ -14,6 +14,7 @@ import {
   faClipboardList,
   faDoorOpen,
   faEdit,
+  faEllipsisVertical,
   faGlobe,
   faMoon,
   faSave,
@@ -89,10 +90,12 @@ const dashboardLabels = {
     accept: 'Accept',
     reject: 'Reject',
     completedAction: 'Done',
+    changeStatus: 'Change status',
     pending: 'Pending',
     accepted: 'Accepted',
     rejected: 'Rejected',
     completed: 'Completed',
+    cancelled: 'Cancelled by user',
     editModerator: 'Edit Moderator',
     addModerator: 'Add Moderator',
     username: 'Username',
@@ -113,6 +116,9 @@ const dashboardLabels = {
     orderStatus: 'Order status',
     allStatuses: 'All statuses',
     allStores: 'All stores',
+    page: 'Page',
+    previous: 'Previous',
+    next: 'Next',
     noProducts: 'No products match your filters.',
     loadingProducts: 'Loading products...',
     loadingOrders: 'Loading orders...',
@@ -168,10 +174,12 @@ const dashboardLabels = {
     accept: 'قبول',
     reject: 'رفض',
     completedAction: 'تم',
+    changeStatus: 'تغيير الحالة',
     pending: 'منتظر',
     accepted: 'مقبول',
     rejected: 'مرفوض',
     completed: 'مكتمل',
+    cancelled: 'ملغي من العميل',
     editModerator: 'تعديل مودريتور',
     addModerator: 'إضافة مودريتور',
     username: 'اسم المستخدم',
@@ -192,6 +200,9 @@ const dashboardLabels = {
     orderStatus: 'حالة الطلب',
     allStatuses: 'كل الحالات',
     allStores: 'كل الفروع',
+    page: 'صفحة',
+    previous: 'السابق',
+    next: 'التالي',
     noProducts: 'لا توجد منتجات مطابقة للفلاتر.',
     loadingProducts: 'جاري تحميل المنتجات...',
     loadingOrders: 'جاري تحميل الطلبات...',
@@ -366,12 +377,13 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
                 {{ label('searchProducts') }}
                 <input
                   name="productSearch"
-                  [(ngModel)]="productSearch"
+                  [ngModel]="productSearch"
+                  (ngModelChange)="setProductSearch($event)"
                   [placeholder]="label('searchProducts')">
               </label>
               <label>
                 {{ label('store') }}
-                <select name="productStoreFilter" [(ngModel)]="productStoreFilter">
+                <select name="productStoreFilter" [ngModel]="productStoreFilter" (ngModelChange)="setProductStoreFilter($event)">
                   <option [ngValue]="0">{{ label('allStores') }}</option>
                   <option *ngFor="let store of stores" [ngValue]="store.id">{{ store.name }}</option>
                 </select>
@@ -381,7 +393,7 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
             <div class="glass empty-card" *ngIf="isLoadingProducts">{{ label('loadingProducts') }}</div>
             <div class="glass empty-card error-card" *ngIf="productsError">{{ productsError }}</div>
 
-            <article class="glass product-row" *ngFor="let product of filteredProducts">
+            <article class="glass product-row" *ngFor="let product of paginatedProducts">
               <img [src]="getImgUrl(product.imageUrl)" [alt]="product.name">
               <div>
                 <h3>{{ product.name }}</h3>
@@ -401,6 +413,11 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
             <div class="glass empty-card" *ngIf="!isLoadingProducts && !productsError && filteredProducts.length === 0">
               {{ label('noProducts') }}
             </div>
+            <div class="pagination" *ngIf="filteredProducts.length > pageSize">
+              <button type="button" class="ghost-btn" [disabled]="productPage === 1" (click)="changePage('products', -1)">{{ label('previous') }}</button>
+              <span>{{ label('page') }} {{ productPage }} / {{ productPageCount }}</span>
+              <button type="button" class="ghost-btn" [disabled]="productPage === productPageCount" (click)="changePage('products', 1)">{{ label('next') }}</button>
+            </div>
           </div>
         </section>
 
@@ -416,16 +433,17 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
           <div class="filter-card" *ngIf="!isModerator">
             <label>
               {{ label('searchOrders') }}
-              <input name="orderSearch" [(ngModel)]="orderSearch" placeholder="Name, phone, email, order #">
+              <input name="orderSearch" [ngModel]="orderSearch" (ngModelChange)="setOrderSearch($event)" placeholder="Name, phone, email, order #">
             </label>
             <label>
               {{ label('orderStatus') }}
-              <select name="orderStatusFilter" [(ngModel)]="orderStatusFilter">
+              <select name="orderStatusFilter" [ngModel]="orderStatusFilter" (ngModelChange)="setOrderStatusFilter($event)">
                 <option value="">{{ label('allStatuses') }}</option>
                 <option value="Pending">{{ label('pending') }}</option>
                 <option value="Accepted">{{ label('accepted') }}</option>
                 <option value="Rejected">{{ label('rejected') }}</option>
                 <option value="Completed">{{ label('completed') }}</option>
+                <option value="Cancelled">{{ label('cancelled') }}</option>
               </select>
             </label>
           </div>
@@ -433,7 +451,7 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
           <div class="empty-card" *ngIf="isLoadingOrders">{{ label('loadingOrders') }}</div>
           <div class="empty-card error-card" *ngIf="ordersError">{{ ordersError }}</div>
 
-          <article class="order-card" *ngFor="let order of filteredOrders">
+          <article class="order-card" *ngFor="let order of paginatedOrders">
             <div class="order-top">
               <div>
                 <h3>Order #{{ order.id }} · {{ order.customerName }}</h3>
@@ -467,13 +485,33 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
             </div>
 
             <div class="order-actions">
-              <button type="button" class="accept" [disabled]="order.status === 'Accepted' || isUpdatingOrder(order.id)" (click)="updateOrder(order, 'Accepted')"><fa-icon class="btn-icon" [icon]="icons.accept"></fa-icon>{{ label('accept') }}</button>
-              <button type="button" class="reject" [disabled]="order.status === 'Rejected' || isUpdatingOrder(order.id)" (click)="updateOrder(order, 'Rejected')"><fa-icon class="btn-icon" [icon]="icons.reject"></fa-icon>{{ label('reject') }}</button>
-              <button type="button" class="complete" [disabled]="order.status === 'Completed' || isUpdatingOrder(order.id)" (click)="updateOrder(order, 'Completed')"><fa-icon class="btn-icon" [icon]="icons.completed"></fa-icon>{{ label('completedAction') }}</button>
+              <ng-container *ngIf="showQuickOrderActions(order)">
+                <button type="button" class="accept" [disabled]="order.status === 'Accepted' || isUpdatingOrder(order.id)" (click)="updateOrder(order, 'Accepted')"><fa-icon class="btn-icon" [icon]="icons.accept"></fa-icon>{{ label('accept') }}</button>
+                <button type="button" class="reject" [disabled]="order.status === 'Rejected' || isUpdatingOrder(order.id)" (click)="updateOrder(order, 'Rejected')"><fa-icon class="btn-icon" [icon]="icons.reject"></fa-icon>{{ label('reject') }}</button>
+                <button type="button" class="complete" [disabled]="order.status === 'Completed' || isUpdatingOrder(order.id)" (click)="updateOrder(order, 'Completed')"><fa-icon class="btn-icon" [icon]="icons.completed"></fa-icon>{{ label('completedAction') }}</button>
+              </ng-container>
+              <div class="status-menu-wrap" *ngIf="showOrderStatusMenu(order)">
+                <button type="button" class="ghost-btn icon-btn" (click)="toggleStatusMenu(order.id)">
+                  <fa-icon class="btn-icon" [icon]="icons.more"></fa-icon>
+                </button>
+                <div class="status-menu" *ngIf="openStatusMenuOrderId === order.id">
+                  <button type="button" (click)="toggleStatusEditor(order.id)">{{ label('changeStatus') }}</button>
+                  <div class="status-options" *ngIf="statusEditorOrderId === order.id">
+                    <button type="button" *ngFor="let status of orderStatuses" [disabled]="order.status === status || isUpdatingOrder(order.id)" (click)="updateOrder(order, status)">
+                      {{ statusLabel(status) }}
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </article>
 
           <div class="empty-card" *ngIf="!isLoadingOrders && !ordersError && filteredOrders.length === 0">{{ label('noOrders') }}</div>
+          <div class="pagination" *ngIf="filteredOrders.length > pageSize">
+            <button type="button" class="ghost-btn" [disabled]="orderPage === 1" (click)="changePage('orders', -1)">{{ label('previous') }}</button>
+            <span>{{ label('page') }} {{ orderPage }} / {{ orderPageCount }}</span>
+            <button type="button" class="ghost-btn" [disabled]="orderPage === orderPageCount" (click)="changePage('orders', 1)">{{ label('next') }}</button>
+          </div>
         </section>
 
         <section class="panel-grid" *ngIf="activeTab === 'moderators' && isAdmin">
@@ -527,7 +565,7 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
             <div class="glass empty-card" *ngIf="isLoadingModerators">{{ label('loadingModerators') }}</div>
             <div class="glass empty-card error-card" *ngIf="moderatorsError">{{ moderatorsError }}</div>
 
-            <article class="glass moderator-row" *ngFor="let moderator of moderators">
+            <article class="glass moderator-row" *ngFor="let moderator of paginatedModerators">
               <div>
                 <h3>{{ moderator.username }}</h3>
                 <p>{{ moderator.assignedStoreName || getStoreName(moderator.assignedStoreId) }} · {{ moderator.email || label('noEmail') }}</p>
@@ -538,6 +576,11 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
                 <button type="button" class="ghost-btn danger" (click)="deactivateModerator(moderator)"><fa-icon class="btn-icon" [icon]="icons.deactivate"></fa-icon>{{ label('deactivate') }}</button>
               </div>
             </article>
+            <div class="pagination" *ngIf="moderators.length > pageSize">
+              <button type="button" class="ghost-btn" [disabled]="moderatorPage === 1" (click)="changePage('moderators', -1)">{{ label('previous') }}</button>
+              <span>{{ label('page') }} {{ moderatorPage }} / {{ moderatorPageCount }}</span>
+              <button type="button" class="ghost-btn" [disabled]="moderatorPage === moderatorPageCount" (click)="changePage('moderators', 1)">{{ label('next') }}</button>
+            </div>
           </div>
         </section>
       </main>
@@ -566,6 +609,7 @@ export class AdminComponent implements OnInit {
     edit: faEdit,
     language: faGlobe,
     logout: faDoorOpen,
+    more: faEllipsisVertical,
     moderators: faUserTie,
     moon: faMoon,
     orders: faClipboardList,
@@ -590,6 +634,13 @@ export class AdminComponent implements OnInit {
   productStoreFilter = 0;
   orderSearch = '';
   orderStatusFilter = '';
+  readonly pageSize = 10;
+  productPage = 1;
+  orderPage = 1;
+  moderatorPage = 1;
+  openStatusMenuOrderId?: number;
+  statusEditorOrderId?: number;
+  orderStatuses: Array<'Pending' | 'Accepted' | 'Rejected' | 'Completed'> = ['Pending', 'Accepted', 'Rejected', 'Completed'];
   isLoadingProducts = false;
   isLoadingOrders = false;
   isLoadingModerators = false;
@@ -665,6 +716,14 @@ export class AdminComponent implements OnInit {
     });
   }
 
+  get paginatedProducts(): Product[] {
+    return this.paginate(this.filteredProducts, this.productPage);
+  }
+
+  get productPageCount(): number {
+    return this.getPageCount(this.filteredProducts.length);
+  }
+
   get filteredOrders(): Order[] {
     const query = this.orderSearch.trim().toLowerCase();
     const status = this.orderStatusFilter;
@@ -683,6 +742,56 @@ export class AdminComponent implements OnInit {
 
       return matchesStatus && (!query || haystack.includes(query));
     });
+  }
+
+  get paginatedOrders(): Order[] {
+    return this.paginate(this.filteredOrders, this.orderPage);
+  }
+
+  get orderPageCount(): number {
+    return this.getPageCount(this.filteredOrders.length);
+  }
+
+  get paginatedModerators(): ModeratorAccount[] {
+    return this.paginate(this.moderators, this.moderatorPage);
+  }
+
+  get moderatorPageCount(): number {
+    return this.getPageCount(this.moderators.length);
+  }
+
+  setProductSearch(value: string): void {
+    this.productSearch = value;
+    this.productPage = 1;
+  }
+
+  setProductStoreFilter(value: number): void {
+    this.productStoreFilter = Number(value) || 0;
+    this.productPage = 1;
+  }
+
+  setOrderSearch(value: string): void {
+    this.orderSearch = value;
+    this.orderPage = 1;
+  }
+
+  setOrderStatusFilter(value: string): void {
+    this.orderStatusFilter = value;
+    this.orderPage = 1;
+  }
+
+  changePage(section: 'products' | 'orders' | 'moderators', direction: number): void {
+    if (section === 'products') {
+      this.productPage = this.clampPage(this.productPage + direction, this.productPageCount);
+      return;
+    }
+
+    if (section === 'orders') {
+      this.orderPage = this.clampPage(this.orderPage + direction, this.orderPageCount);
+      return;
+    }
+
+    this.moderatorPage = this.clampPage(this.moderatorPage + direction, this.moderatorPageCount);
   }
 
   setTab(tab: DashboardTab): void {
@@ -707,6 +816,7 @@ export class AdminComponent implements OnInit {
     this.productService.getProducts().subscribe({
       next: products => {
         this.products = products;
+        this.productPage = this.clampPage(this.productPage, this.productPageCount);
         this.isLoadingProducts = false;
       },
       error: () => {
@@ -724,6 +834,7 @@ export class AdminComponent implements OnInit {
     this.orderService.getOrders().subscribe({
       next: orders => {
         this.orders = orders;
+        this.orderPage = this.clampPage(this.orderPage, this.orderPageCount);
         this.isLoadingOrders = false;
       },
       error: () => {
@@ -741,6 +852,7 @@ export class AdminComponent implements OnInit {
     this.authService.getModerators().subscribe({
       next: moderators => {
         this.moderators = moderators;
+        this.moderatorPage = this.clampPage(this.moderatorPage, this.moderatorPageCount);
         this.isLoadingModerators = false;
       },
       error: () => {
@@ -846,7 +958,7 @@ export class AdminComponent implements OnInit {
     this.colorsInput = 'Black, White';
   }
 
-  updateOrder(order: Order, status: 'Accepted' | 'Rejected' | 'Completed'): void {
+  updateOrder(order: Order, status: 'Pending' | 'Accepted' | 'Rejected' | 'Completed' | 'Cancelled'): void {
     if (!order.id) {
       return;
     }
@@ -855,6 +967,8 @@ export class AdminComponent implements OnInit {
     this.orderService.updateOrderStatus(order.id, status).subscribe({
       next: () => {
         this.toastService.show('Order updated.', 'success');
+        this.openStatusMenuOrderId = undefined;
+        this.statusEditorOrderId = undefined;
         this.loadOrders();
         this.updatingOrderIds.delete(order.id!);
       },
@@ -945,6 +1059,45 @@ export class AdminComponent implements OnInit {
     return !!orderId && this.updatingOrderIds.has(orderId);
   }
 
+  showQuickOrderActions(order: Order): boolean {
+    return !['cancelled', 'canceled', 'completed', 'rejected'].includes((order.status || '').toLowerCase());
+  }
+
+  showOrderStatusMenu(order: Order): boolean {
+    return !['cancelled', 'canceled'].includes((order.status || '').toLowerCase());
+  }
+
+  private paginate<T>(items: T[], page: number): T[] {
+    const safePage = this.clampPage(page, this.getPageCount(items.length));
+    const start = (safePage - 1) * this.pageSize;
+    return items.slice(start, start + this.pageSize);
+  }
+
+  private getPageCount(totalItems: number): number {
+    return Math.max(1, Math.ceil(totalItems / this.pageSize));
+  }
+
+  private clampPage(page: number, pageCount: number): number {
+    return Math.min(Math.max(page, 1), pageCount);
+  }
+
+  toggleStatusMenu(orderId?: number): void {
+    if (!orderId) {
+      return;
+    }
+
+    this.openStatusMenuOrderId = this.openStatusMenuOrderId === orderId ? undefined : orderId;
+    this.statusEditorOrderId = undefined;
+  }
+
+  toggleStatusEditor(orderId?: number): void {
+    if (!orderId) {
+      return;
+    }
+
+    this.statusEditorOrderId = this.statusEditorOrderId === orderId ? undefined : orderId;
+  }
+
   statusClass(status: string): string {
     return `status-${status.toLowerCase()}`;
   }
@@ -954,7 +1107,9 @@ export class AdminComponent implements OnInit {
       Pending: 'pending',
       Accepted: 'accepted',
       Rejected: 'rejected',
-      Completed: 'completed'
+      Completed: 'completed',
+      Cancelled: 'cancelled',
+      Canceled: 'cancelled'
     };
     return statusLabels[status] ? this.label(statusLabels[status]) : status;
   }
@@ -964,7 +1119,9 @@ export class AdminComponent implements OnInit {
       Pending: this.icons.pending,
       Accepted: this.icons.accept,
       Rejected: this.icons.reject,
-      Completed: this.icons.completed
+      Completed: this.icons.completed,
+      Cancelled: this.icons.cancel,
+      Canceled: this.icons.cancel
     };
     return icons[status as keyof typeof icons] || this.icons.orders;
   }

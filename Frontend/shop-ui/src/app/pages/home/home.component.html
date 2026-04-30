@@ -168,7 +168,7 @@
       </div>
 
       <div class="product-grid">
-        <ng-container *ngFor="let product of winterProducts; trackBy: trackByProductId">
+        <ng-container *ngFor="let product of paginatedWinterProducts; trackBy: trackByProductId">
           <article
             class="product-card glass"
             role="button"
@@ -210,6 +210,16 @@
             </div>
           </article>
         </ng-container>
+      </div>
+
+      <div class="pagination" *ngIf="winterProducts.length > pageSize">
+        <button type="button" class="pagination-btn glass" [disabled]="winterPage === 1" (click)="changeCollectionPage('winter', -1)">
+          {{ previousPageLabel }}
+        </button>
+        <span>{{ paginationLabel }} {{ winterPage }} / {{ winterPageCount }}</span>
+        <button type="button" class="pagination-btn glass" [disabled]="winterPage === winterPageCount" (click)="changeCollectionPage('winter', 1)">
+          {{ nextPageLabel }}
+        </button>
       </div>
     </div>
   </section>
@@ -222,7 +232,7 @@
       </div>
 
       <div class="product-grid">
-        <ng-container *ngFor="let product of summerProducts; trackBy: trackByProductId">
+        <ng-container *ngFor="let product of paginatedSummerProducts; trackBy: trackByProductId">
           <article
             class="product-card glass"
             role="button"
@@ -264,6 +274,16 @@
             </div>
           </article>
         </ng-container>
+      </div>
+
+      <div class="pagination" *ngIf="summerProducts.length > pageSize">
+        <button type="button" class="pagination-btn glass" [disabled]="summerPage === 1" (click)="changeCollectionPage('summer', -1)">
+          {{ previousPageLabel }}
+        </button>
+        <span>{{ paginationLabel }} {{ summerPage }} / {{ summerPageCount }}</span>
+        <button type="button" class="pagination-btn glass" [disabled]="summerPage === summerPageCount" (click)="changeCollectionPage('summer', 1)">
+          {{ nextPageLabel }}
+        </button>
       </div>
     </div>
   </section>

@@ -29,7 +29,7 @@ import { assetUrl } from '../../core/api.config';
             <button type="button" class="btn retry-btn" (click)="loadOrders()">Retry</button>
           </div>
 
-          <div class="glass order-card" *ngFor="let order of orders">
+          <div class="glass order-card" *ngFor="let order of paginatedOrders">
             <div class="order-header">
               <div>
                 <div class="order-label">Order #{{ order.id }}</div>
@@ -40,7 +40,8 @@ import { assetUrl } from '../../core/api.config';
                 [class.pending]="order.status === 'Pending'"
                 [class.accepted]="order.status === 'Accepted'"
                 [class.rejected]="order.status === 'Rejected'"
-                [class.completed]="order.status === 'Completed'">
+                [class.completed]="order.status === 'Completed'"
+                [class.cancelled]="order.status === 'Cancelled' || order.status === 'Canceled'">
                 {{ statusLabel(order.status) }}
               </div>
             </div>
@@ -86,6 +87,16 @@ import { assetUrl } from '../../core/api.config';
           <div class="glass empty-state" *ngIf="!isLoading && !ordersError && orders.length === 0">
             {{ translation.t('myOrders.empty') }}
           </div>
+
+          <div class="pagination" *ngIf="orders.length > pageSize">
+            <button type="button" class="btn page-btn" [disabled]="orderPage === 1" (click)="changePage(-1)">
+              {{ previousPageLabel }}
+            </button>
+            <span>{{ paginationLabel }} {{ orderPage }} / {{ orderPageCount }}</span>
+            <button type="button" class="btn page-btn" [disabled]="orderPage === orderPageCount" (click)="changePage(1)">
+              {{ nextPageLabel }}
+            </button>
+          </div>
         </section>
       </div>
     </div>
@@ -118,6 +129,7 @@ import { assetUrl } from '../../core/api.config';
     .accepted { background: rgba(52,152,219,.16); color: #4ea6db; }
     .rejected { background: rgba(255,107,107,.16); color: #ff6b6b; }
     .completed { background: rgba(46,204,113,.16); color: #44d486; }
+    .cancelled { background: rgba(255,107,107,.16); color: #ff8d99; }
     .order-items { display: grid; gap: 12px; margin-bottom: 18px; }
     .item-row { display: flex; align-items: center; gap: 14px; padding: 12px; border-radius: 18px; background: rgba(255,255,255,.05); }
     .item-row img { width: 58px; height: 58px; object-fit: contain; border-radius: 14px; background: rgba(255,255,255,.05); padding: 6px; }
@@ -132,6 +144,10 @@ import { assetUrl } from '../../core/api.config';
     .cancel-btn { background: linear-gradient(135deg, #ff6b6b, #ff4757); }
     .whatsapp-btn { text-decoration: none; background: linear-gradient(135deg, #25d366, #57d8a3); }
     .return-btn { background: linear-gradient(135deg, #8f7cff, #5f7cff); }
+    .pagination { display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .pagination span { font-weight: 800; }
+    .page-btn { background: rgba(255,255,255,.08); }
+    .page-btn:disabled { opacity: .45; cursor: not-allowed; }
     .empty-state { padding: 30px; text-align: center; }
     .error-state { color: #ff8d99; display: grid; justify-items: center; gap: 14px; }
     .retry-btn { background: linear-gradient(135deg, var(--primary-accent), var(--secondary-accent)); }
@@ -151,12 +167,15 @@ import { assetUrl } from '../../core/api.config';
       .order-meta { width: 100%; }
       .order-actions { width: 100%; }
       .order-actions .btn { width: 100%; min-height: 46px; }
+      .pagination .btn { width: auto; min-width: 120px; }
       .retry-btn { width: 100%; min-height: 46px; }
     }
   `]
 })
 export class MyOrdersComponent implements OnInit {
   orders: Order[] = [];
+  readonly pageSize = 10;
+  orderPage = 1;
   isLoading = false;
   ordersError = '';
 
@@ -183,6 +202,7 @@ export class MyOrdersComponent implements OnInit {
     this.orderService.getMyOrders().subscribe({
       next: data => {
         this.orders = data;
+        this.orderPage = this.clampPage(this.orderPage, this.orderPageCount);
         this.isLoading = false;
       },
       error: () => {
@@ -217,9 +237,40 @@ export class MyOrdersComponent implements OnInit {
       Pending: 'Pending',
       Accepted: 'Accepted',
       Rejected: 'Rejected',
-      Completed: 'Completed'
+      Completed: 'Completed',
+      Cancelled: 'Cancelled',
+      Canceled: 'Cancelled'
     };
     return labels[status] || status;
+  }
+
+  get paginatedOrders(): Order[] {
+    const start = (this.orderPage - 1) * this.pageSize;
+    return this.orders.slice(start, start + this.pageSize);
+  }
+
+  get orderPageCount(): number {
+    return Math.max(1, Math.ceil(this.orders.length / this.pageSize));
+  }
+
+  get paginationLabel(): string {
+    return this.translation.isArabic ? 'صفحة' : 'Page';
+  }
+
+  get previousPageLabel(): string {
+    return this.translation.isArabic ? 'السابق' : 'Previous';
+  }
+
+  get nextPageLabel(): string {
+    return this.translation.isArabic ? 'التالي' : 'Next';
+  }
+
+  changePage(direction: number): void {
+    this.orderPage = this.clampPage(this.orderPage + direction, this.orderPageCount);
+  }
+
+  private clampPage(page: number, pageCount: number): number {
+    return Math.min(Math.max(page, 1), pageCount);
   }
 
   formatPaymentMethod(paymentMethod?: string): string {

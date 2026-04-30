@@ -16,16 +16,16 @@ public class CloudinaryImageUploader
     }
 
     public bool IsConfigured =>
-        !string.IsNullOrWhiteSpace(_configuration["Cloudinary:CloudName"]) &&
-        !string.IsNullOrWhiteSpace(_configuration["Cloudinary:ApiKey"]) &&
-        !string.IsNullOrWhiteSpace(_configuration["Cloudinary:ApiSecret"]);
+        !string.IsNullOrWhiteSpace(GetSetting("Cloudinary:CloudName", "CLOUDINARY_CLOUD_NAME")) &&
+        !string.IsNullOrWhiteSpace(GetSetting("Cloudinary:ApiKey", "CLOUDINARY_API_KEY")) &&
+        !string.IsNullOrWhiteSpace(GetSetting("Cloudinary:ApiSecret", "CLOUDINARY_API_SECRET"));
 
     public async Task<string> UploadAsync(IFormFile file, CancellationToken cancellationToken)
     {
-        var cloudName = _configuration["Cloudinary:CloudName"]!;
-        var apiKey = _configuration["Cloudinary:ApiKey"]!;
-        var apiSecret = _configuration["Cloudinary:ApiSecret"]!;
-        var folder = _configuration["Cloudinary:Folder"] ?? "moon-store/products";
+        var cloudName = GetSetting("Cloudinary:CloudName", "CLOUDINARY_CLOUD_NAME")!;
+        var apiKey = GetSetting("Cloudinary:ApiKey", "CLOUDINARY_API_KEY")!;
+        var apiSecret = GetSetting("Cloudinary:ApiSecret", "CLOUDINARY_API_SECRET")!;
+        var folder = GetSetting("Cloudinary:Folder", "CLOUDINARY_FOLDER") ?? "moon-store/products";
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
 
         var parameters = new SortedDictionary<string, string>
@@ -58,5 +58,10 @@ public class CloudinaryImageUploader
         return json.RootElement.TryGetProperty("secure_url", out var secureUrl)
             ? secureUrl.GetString() ?? throw new InvalidOperationException("Cloudinary did not return a secure URL.")
             : throw new InvalidOperationException("Cloudinary did not return a secure URL.");
+    }
+
+    private string? GetSetting(string dotNetKey, string environmentKey)
+    {
+        return _configuration[dotNetKey] ?? _configuration[environmentKey];
     }
 }

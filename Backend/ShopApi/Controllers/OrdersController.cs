@@ -15,7 +15,8 @@ public class OrdersController : ControllerBase
     private readonly ShopContext _context;
     private static readonly HashSet<string> StockRestoredStatuses = new(StringComparer.OrdinalIgnoreCase)
     {
-        "Rejected"
+        "Rejected",
+        "Cancelled"
     };
 
     private static readonly HashSet<string> AllowedStatuses = new(StringComparer.OrdinalIgnoreCase)
@@ -23,7 +24,8 @@ public class OrdersController : ControllerBase
         "Pending",
         "Accepted",
         "Rejected",
-        "Completed"
+        "Completed",
+        "Cancelled"
     };
 
     public OrdersController(ShopContext context)
@@ -204,7 +206,7 @@ public class OrdersController : ControllerBase
             return BadRequest("Only pending orders can be cancelled.");
         }
 
-        order.Status = "Rejected";
+        order.Status = "Cancelled";
         await RestoreStockAsync(order);
         await _context.SaveChangesAsync();
         return NoContent();

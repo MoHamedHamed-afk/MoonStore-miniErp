@@ -49,6 +49,9 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
   winterProducts: Product[] = [];
   searchQuery = '';
   selectedSearchCategory = 'all';
+  readonly pageSize = 10;
+  winterPage = 1;
+  summerPage = 1;
 
   private renderer!: THREE.WebGLRenderer;
   private scene!: THREE.Scene;
@@ -208,6 +211,43 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
     });
   }
 
+  get paginatedWinterProducts(): Product[] {
+    return this.paginate(this.winterProducts, this.winterPage);
+  }
+
+  get paginatedSummerProducts(): Product[] {
+    return this.paginate(this.summerProducts, this.summerPage);
+  }
+
+  get winterPageCount(): number {
+    return this.getPageCount(this.winterProducts.length);
+  }
+
+  get summerPageCount(): number {
+    return this.getPageCount(this.summerProducts.length);
+  }
+
+  get paginationLabel(): string {
+    return this.translation.isArabic ? 'صفحة' : 'Page';
+  }
+
+  get previousPageLabel(): string {
+    return this.translation.isArabic ? 'السابق' : 'Previous';
+  }
+
+  get nextPageLabel(): string {
+    return this.translation.isArabic ? 'التالي' : 'Next';
+  }
+
+  changeCollectionPage(collection: 'winter' | 'summer', direction: number) {
+    if (collection === 'winter') {
+      this.winterPage = this.clampPage(this.winterPage + direction, this.winterPageCount);
+      return;
+    }
+
+    this.summerPage = this.clampPage(this.summerPage + direction, this.summerPageCount);
+  }
+
   selectSearchCategory(category: string) {
     this.selectedSearchCategory = category;
   }
@@ -245,6 +285,22 @@ export class HomeComponent implements AfterViewInit, OnDestroy {
   private splitCollections() {
     this.winterProducts = this.products.filter(product => product.category?.toLowerCase() === 'winter');
     this.summerProducts = this.products.filter(product => product.category?.toLowerCase() === 'summer');
+    this.winterPage = this.clampPage(this.winterPage, this.winterPageCount);
+    this.summerPage = this.clampPage(this.summerPage, this.summerPageCount);
+  }
+
+  private paginate<T>(items: T[], page: number): T[] {
+    const safePage = this.clampPage(page, this.getPageCount(items.length));
+    const start = (safePage - 1) * this.pageSize;
+    return items.slice(start, start + this.pageSize);
+  }
+
+  private getPageCount(totalItems: number): number {
+    return Math.max(1, Math.ceil(totalItems / this.pageSize));
+  }
+
+  private clampPage(page: number, pageCount: number): number {
+    return Math.min(Math.max(page, 1), pageCount);
   }
 
   private getFallbackProducts(): Product[] {

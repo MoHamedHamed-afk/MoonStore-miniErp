@@ -81,7 +81,6 @@
   place-items: center;
   border-radius: 16px;
   background: rgba(255, 255, 255, .1);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08);
   font-size: 1.35rem;
   margin-bottom: 6px;
 }
@@ -102,15 +101,13 @@
   place-items: center;
   flex: 0 0 auto;
   border-radius: 16px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, .13), rgba(255, 255, 255, .04));
   font-size: 1.25rem;
 }
 .nav-icon, .btn-icon, .status-icon {
   display: inline-grid;
   place-items: center;
-  line-height: 1;
-  flex: 0 0 auto;
 }
+.btn-icon{color:#b4d3d9}.danger .btn-icon{color:red}.nav-icon,.section-icon{color:#9b8ec7}.stat-icon{color:#57d8a3}
 label { display: grid; gap: 7px; font-weight: 700; }
 input, textarea, select {
   width: 100%;
@@ -194,7 +191,6 @@ textarea { resize: vertical; }
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
 }
 .status-pending { color: #f1c40f; background: rgba(241, 196, 15, .16); }
 .status-accepted { color: #4ea6db; background: rgba(52, 152, 219, .16); }
@@ -211,6 +207,8 @@ textarea { resize: vertical; }
 }
 .order-items span, .order-bottom span { opacity: .74; }
 .order-actions button { color: #fff; }
+.status-menu-wrap{position:relative}.status-menu{position:absolute;right:0;z-index:30;padding:10px;border-radius:16px;background:#20212a;display:grid}.status-options{display:grid}
+.pagination{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}.pagination span{font-weight:800;opacity:.82}
 .tabs button:disabled, .ghost-btn:disabled, .primary-btn:disabled, .order-actions button:disabled {
   opacity: .45;
   cursor: not-allowed;
@@ -224,9 +222,6 @@ textarea { resize: vertical; }
 .error-card { color: #ff8d99; opacity: 1; }
 .hint-line {
   color: var(--secondary-accent);
-  font-size: .86rem;
-  margin-top: 4px !important;
-  opacity: .9 !important;
 }
 .confirm-backdrop {
   position: fixed;
@@ -236,7 +231,6 @@ textarea { resize: vertical; }
   place-items: center;
   padding: 20px;
   background: rgba(0, 0, 0, .48);
-  backdrop-filter: blur(10px);
 }
 .confirm-card {
   width: min(420px, 100%);
@@ -257,11 +251,11 @@ textarea { resize: vertical; }
 }
 @media (max-width: 560px) {
   .admin-shell { padding: 10px; overflow: visible; }
-  .dashboard-nav { align-items: flex-start; flex-direction: column; padding: 12px; border-radius: 22px; }
+  .dashboard-nav { align-items: flex-start; flex-direction: column; padding: 12px; border-radius: 22px; position: static; }
   .hero-card { padding: 18px; }
   .hero-card h1 { font-size: clamp(2rem, 12vw, 2.55rem); overflow-wrap: anywhere; }
   .role-pill { width: 100%; align-items: flex-start; }
-  .tabs { position: sticky; top: 8px; z-index: 20; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; }
+  .tabs { position: static; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px; }
   .tabs button { min-height: 46px; justify-content: center; padding: 10px; }
   .stats-grid strong { font-size: 1.85rem; }
   .editor-card, .orders-panel { padding: 16px; }
