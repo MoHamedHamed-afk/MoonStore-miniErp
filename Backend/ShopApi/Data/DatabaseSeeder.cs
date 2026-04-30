@@ -70,6 +70,8 @@ public static class DatabaseSeeder
             });
         }
 
+        RemoveLegacySampleProducts(context);
+
         if (context.Products.Any())
         {
             foreach (var product in context.Products)
@@ -81,6 +83,37 @@ public static class DatabaseSeeder
         }
 
         await context.SaveChangesAsync();
+    }
+
+    private static void RemoveLegacySampleProducts(ShopContext context)
+    {
+        var legacySampleNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "Premium 3D Hoodie",
+            "Futuristic Sneakers",
+            "Modern Puffer Jacket",
+            "Summer Vintage Shirt",
+            "Cargo Shorts",
+            "Streetwear Bucket Hat",
+            "Winter Knit Beanie",
+            "Tactical Winter Boots",
+            "Designer Scarf"
+        };
+
+        var legacySamples = context.Products
+            .AsEnumerable()
+            .Where(product =>
+                legacySampleNames.Contains(product.Name)
+                && (
+                    string.IsNullOrWhiteSpace(product.ImageUrl)
+                    || product.ImageUrl.StartsWith("assets/images/", StringComparison.OrdinalIgnoreCase)
+                ))
+            .ToList();
+
+        if (legacySamples.Count > 0)
+        {
+            context.Products.RemoveRange(legacySamples);
+        }
     }
 
     private static string? GetSeedValue(IConfiguration configuration, string key)
