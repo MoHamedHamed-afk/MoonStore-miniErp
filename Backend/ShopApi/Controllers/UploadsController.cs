@@ -47,8 +47,19 @@ public class UploadsController : ControllerBase
 
         if (_cloudinaryImageUploader.IsConfigured)
         {
-            var cloudinaryUrl = await _cloudinaryImageUploader.UploadAsync(file, cancellationToken);
-            return Ok(new { Url = cloudinaryUrl, Provider = "cloudinary" });
+            try
+            {
+                var cloudinaryUrl = await _cloudinaryImageUploader.UploadAsync(file, cancellationToken);
+                return Ok(new { Url = cloudinaryUrl, Provider = "cloudinary" });
+            }
+            catch (InvalidOperationException exception)
+            {
+                return StatusCode(StatusCodes.Status502BadGateway, new
+                {
+                    Error = "Cloudinary upload failed.",
+                    Details = exception.Message
+                });
+            }
         }
 
         var uploadsFolder = AppPaths.ResolveUploadsPath(_environment, _configuration);

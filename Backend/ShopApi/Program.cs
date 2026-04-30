@@ -56,7 +56,12 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowFrontend",
         policy =>
         {
-            var origins = new[] { "http://localhost:4200" }
+            var origins = new[]
+                {
+                    "http://localhost:3000",
+                    "http://localhost:4200",
+                    "https://moonstore-mini-erp-frontend.pages.dev"
+                }
                 .Concat(GetConfiguredOrigins(builder.Configuration))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToArray();
