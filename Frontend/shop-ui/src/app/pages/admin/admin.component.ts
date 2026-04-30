@@ -537,15 +537,13 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
                 <button type="button" class="ghost-btn icon-btn" (click)="toggleStatusMenu(order.id)">
                   <fa-icon class="btn-icon" [icon]="icons.more"></fa-icon>
                 </button>
-                <div class="status-menu" *ngIf="openStatusMenuOrderId === order.id">
-                  <button type="button" (click)="toggleStatusEditor(order.id)">{{ label('changeStatus') }}</button>
-                  <div class="status-options" *ngIf="statusEditorOrderId === order.id">
-                    <button type="button" *ngFor="let status of orderStatuses" [disabled]="order.status === status || isUpdatingOrder(order.id)" (click)="updateOrder(order, status)">
-                      {{ statusLabel(status) }}
-                    </button>
-                  </div>
-                </div>
               </div>
+            </div>
+            <div class="status-strip" *ngIf="openStatusMenuOrderId === order.id && showOrderStatusMenu(order)">
+              <span>{{ label('changeStatus') }}</span>
+              <button type="button" *ngFor="let status of orderStatuses" [disabled]="order.status === status || isUpdatingOrder(order.id)" (click)="updateOrder(order, status)">
+                <fa-icon class="btn-icon" [icon]="statusIcon(status)"></fa-icon>{{ statusLabel(status) }}
+              </button>
             </div>
           </article>
 
@@ -1172,15 +1170,6 @@ export class AdminComponent implements OnInit {
     }
 
     this.openStatusMenuOrderId = this.openStatusMenuOrderId === orderId ? undefined : orderId;
-    this.statusEditorOrderId = undefined;
-  }
-
-  toggleStatusEditor(orderId?: number): void {
-    if (!orderId) {
-      return;
-    }
-
-    this.statusEditorOrderId = this.statusEditorOrderId === orderId ? undefined : orderId;
   }
 
   statusClass(status: string): string {

@@ -68,8 +68,10 @@ textarea{resize:vertical}
 .order-items span,.order-bottom span{opacity:.74}
 .order-actions button{color:#fff}
 .status-menu-wrap{position:relative}
-.status-menu{position:absolute;right:0;z-index:30;padding:10px;border-radius:16px;background:#20212a;display:grid}
-.status-options{display:grid}
+.status-strip{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px;border-radius:18px;background:rgba(255,255,255,.06);border:1px solid var(--glass-border)}
+.status-strip span{font-weight:900;color:var(--secondary-accent)}
+.status-strip button{border:0;cursor:pointer;border-radius:999px;padding:9px 13px;font-weight:800;color:var(--text-color);background:rgba(255,255,255,.08);display:inline-flex;align-items:center;gap:7px}
+.status-strip button:disabled{opacity:.45;cursor:not-allowed}
 .pagination{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
 .pagination span{font-weight:800;opacity:.82}
 .tabs button:disabled,.ghost-btn:disabled,.primary-btn:disabled,.order-actions button:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
