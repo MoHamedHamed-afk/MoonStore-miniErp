@@ -944,9 +944,10 @@ export class AdminComponent implements OnInit {
         this.isUploadingImage = false;
         this.toastService.show('Image uploaded.', 'success');
       },
-      error: () => {
+      error: error => {
         this.isUploadingImage = false;
-        this.toastService.show('Could not upload image.', 'error');
+        const detail = error?.error?.Details || error?.error?.Error || error?.message;
+        this.toastService.show(detail ? `Could not upload image: ${detail}` : 'Could not upload image.', 'error');
       }
     });
   }

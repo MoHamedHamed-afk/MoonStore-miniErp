@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Net.Http.Headers;
 
 namespace ShopApi.Services;
 
@@ -39,7 +40,9 @@ public class CloudinaryImageUploader
 
         await using var stream = file.OpenReadStream();
         using var content = new MultipartFormDataContent();
-        content.Add(new StreamContent(stream), "file", file.FileName);
+        var fileContent = new StreamContent(stream);
+        fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse(file.ContentType);
+        content.Add(fileContent, "file", file.FileName);
         content.Add(new StringContent(apiKey), "api_key");
         content.Add(new StringContent(timestamp), "timestamp");
         content.Add(new StringContent(folder), "folder");
@@ -62,6 +65,6 @@ public class CloudinaryImageUploader
 
     private string? GetSetting(string dotNetKey, string environmentKey)
     {
-        return _configuration[dotNetKey] ?? _configuration[environmentKey];
+        return (_configuration[dotNetKey] ?? _configuration[environmentKey])?.Trim();
     }
 }
