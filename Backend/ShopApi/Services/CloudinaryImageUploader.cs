@@ -65,6 +65,6 @@ public class CloudinaryImageUploader
 
     private string? GetSetting(string dotNetKey, string environmentKey)
     {
-        return (_configuration[dotNetKey] ?? _configuration[environmentKey])?.Trim();
+        return (_configuration[dotNetKey] ?? _configuration[environmentKey])?.Trim().Trim('"', '\'');
     }
 }
