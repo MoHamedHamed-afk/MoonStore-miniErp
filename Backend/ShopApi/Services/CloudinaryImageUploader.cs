@@ -84,10 +84,10 @@ public class CloudinaryImageUploader
     {
         await using var stream = file.OpenReadStream();
         using var content = new MultipartFormDataContent();
+        content.Add(new StringContent(uploadPreset), "upload_preset");
         var fileContent = new StreamContent(stream);
         fileContent.Headers.ContentType = MediaTypeHeaderValue.Parse(file.ContentType);
         content.Add(fileContent, "file", file.FileName);
-        content.Add(new StringContent(uploadPreset), "upload_preset");
 
         var endpoint = $"https://api.cloudinary.com/v1_1/{cloudName}/image/upload";
         using var response = await _httpClient.PostAsync(endpoint, content, cancellationToken);
@@ -95,7 +95,7 @@ public class CloudinaryImageUploader
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException($"Cloudinary unsigned upload failed: {responseBody}");
+            throw new InvalidOperationException($"Cloudinary unsigned upload failed for preset '{uploadPreset}': {responseBody}");
         }
 
         using var json = JsonDocument.Parse(responseBody);
