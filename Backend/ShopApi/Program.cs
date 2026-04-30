@@ -120,10 +120,8 @@ app.Use(async (context, next) =>
     await next();
 });
 
-if (!app.Environment.IsDevelopment())
-{
-    app.UseHttpsRedirection();
-}
+// Render terminates HTTPS at the proxy. Redirecting inside the container can
+// produce noisy "failed to determine HTTPS port" warnings without improving TLS.
 app.UseStaticFiles(new StaticFileOptions
 {
     OnPrepareResponse = context =>

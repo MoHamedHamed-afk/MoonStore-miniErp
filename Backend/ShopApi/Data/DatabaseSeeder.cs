@@ -36,6 +36,10 @@ public static class DatabaseSeeder
         {
             legacyAdmin.Role = "Admin";
             legacyAdmin.IsActive = true;
+            if (!string.IsNullOrWhiteSpace(adminPassword))
+            {
+                legacyAdmin.PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword);
+            }
         }
 
         if (!context.Users.Any(user => user.Username == "backup_admin") && !string.IsNullOrWhiteSpace(backupAdminPassword))
@@ -55,6 +59,10 @@ public static class DatabaseSeeder
         {
             backupAdmin.Role = "Admin";
             backupAdmin.IsActive = true;
+            if (!string.IsNullOrWhiteSpace(backupAdminPassword))
+            {
+                backupAdmin.PasswordHash = BCrypt.Net.BCrypt.HashPassword(backupAdminPassword);
+            }
         }
 
         if (!context.Users.Any(user => user.Username == "moderator1") && !string.IsNullOrWhiteSpace(moderatorPassword))
@@ -70,7 +78,20 @@ public static class DatabaseSeeder
             });
         }
 
+        var demoModerator = context.Users.FirstOrDefault(user => user.Username == "moderator1");
+        if (demoModerator is not null)
+        {
+            demoModerator.Role = "Moderator";
+            demoModerator.AssignedStoreId ??= 1;
+            demoModerator.IsActive = true;
+            if (!string.IsNullOrWhiteSpace(moderatorPassword))
+            {
+                demoModerator.PasswordHash = BCrypt.Net.BCrypt.HashPassword(moderatorPassword);
+            }
+        }
+
         RemoveLegacySampleProducts(context);
+        await context.SaveChangesAsync();
 
         if (!context.Products.Any())
         {
@@ -123,6 +144,7 @@ public static class DatabaseSeeder
         {
             new Product
             {
+                Id = 1001,
                 Name = "Rose Moon Hoodie Set",
                 Description = "Soft rose hoodie and wide-leg pants with a quiet premium streetwear mood.",
                 Price = 1450m,
@@ -137,6 +159,7 @@ public static class DatabaseSeeder
             },
             new Product
             {
+                Id = 1002,
                 Name = "Charcoal Signature Set",
                 Description = "A relaxed charcoal matching set designed for bold everyday comfort.",
                 Price = 1550m,
@@ -151,6 +174,7 @@ public static class DatabaseSeeder
             },
             new Product
             {
+                Id = 1003,
                 Name = "Burgundy Night Set",
                 Description = "Deep burgundy lounge set with a statement premium finish.",
                 Price = 1650m,
@@ -165,6 +189,7 @@ public static class DatabaseSeeder
             },
             new Product
             {
+                Id = 1004,
                 Name = "Pink Denim Moon Hoodie",
                 Description = "Bright pink hoodie paired with oversized denim energy for standout summer nights.",
                 Price = 1250m,
@@ -179,6 +204,7 @@ public static class DatabaseSeeder
             },
             new Product
             {
+                Id = 1005,
                 Name = "Cream Breeze Set",
                 Description = "Light cream two-piece set made for clean, effortless warm-weather styling.",
                 Price = 1350m,
@@ -193,6 +219,7 @@ public static class DatabaseSeeder
             },
             new Product
             {
+                Id = 1006,
                 Name = "Layered Lounge Moon Set",
                 Description = "Layered neutral lounge fit with soft movement and a polished Moon Store look.",
                 Price = 1500m,
