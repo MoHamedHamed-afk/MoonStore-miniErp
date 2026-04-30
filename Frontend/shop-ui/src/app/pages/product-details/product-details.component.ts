@@ -16,7 +16,21 @@ import { assetUrl } from '../../core/api.config';
     <div class="container product-details-page" style="padding-top: 120px; min-height: 100vh;" *ngIf="product">
       <div class="glass product-details-card" style="display: flex; flex-wrap: wrap; padding: 40px; border-radius: 24px; gap: 40px;">
         <div class="product-media" style="flex: 1; min-width: 300px;">
-          <img [src]="imageUrl" [alt]="product.name" loading="eager" decoding="async" style="width: 100%; border-radius: 16px;">
+          <div class="gallery-main">
+            <button type="button" class="gallery-arrow" *ngIf="galleryImages.length > 1" (click)="changeImage(-1)" aria-label="Previous image">‹</button>
+            <img [src]="selectedImageUrl" [alt]="product.name" loading="eager" decoding="async" style="width: 100%; border-radius: 16px;">
+            <button type="button" class="gallery-arrow" *ngIf="galleryImages.length > 1" (click)="changeImage(1)" aria-label="Next image">›</button>
+          </div>
+          <div class="gallery-thumbs" *ngIf="galleryImages.length > 1">
+            <button
+              type="button"
+              *ngFor="let image of galleryImages; let index = index"
+              [class.active]="selectedImageIndex === index"
+              (click)="selectImage(index)"
+              [attr.aria-label]="'View product image ' + (index + 1)">
+              <img [src]="getImgUrl(image)" [alt]="product.name + ' thumbnail ' + (index + 1)" loading="lazy" decoding="async">
+            </button>
+          </div>
         </div>
         <div class="product-copy" style="flex: 1; min-width: 300px; display: flex; flex-direction: column; justify-content: center;">
           <h1 style="font-size: 3rem; margin-bottom: 20px;">{{ product.name }}</h1>
@@ -58,11 +72,71 @@ import { assetUrl } from '../../core/api.config';
     </div>
   `,
   styles: [`
+    .gallery-main {
+      position: relative;
+      display: grid;
+      place-items: center;
+      border-radius: 20px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, .055);
+    }
+    .gallery-main img {
+      max-height: 620px;
+      object-fit: contain;
+    }
+    .gallery-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--glass-border);
+      border-radius: 999px;
+      color: var(--text-color);
+      background: rgba(10, 12, 20, .62);
+      backdrop-filter: blur(12px);
+      cursor: pointer;
+      font-size: 2rem;
+      line-height: 1;
+    }
+    .gallery-arrow:first-child { left: 12px; }
+    .gallery-arrow:last-child { right: 12px; }
+    .gallery-thumbs {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+    .gallery-thumbs button {
+      width: 76px;
+      height: 76px;
+      padding: 4px;
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, .07);
+      cursor: pointer;
+      opacity: .72;
+    }
+    .gallery-thumbs button.active {
+      border-color: var(--primary-accent);
+      opacity: 1;
+      box-shadow: 0 0 0 3px rgba(155, 142, 199, .18);
+    }
+    .gallery-thumbs img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 12px;
+    }
     @media (max-width: 720px) {
       .product-details-page { padding-top: 96px !important; }
       .product-details-card { padding: 18px !important; gap: 22px !important; border-radius: 22px !important; }
       .product-media, .product-copy { min-width: 0 !important; flex-basis: 100% !important; }
       .product-media img { max-height: 360px; object-fit: contain; background: rgba(255, 255, 255, .055); }
+      .gallery-main img { max-height: 360px; }
+      .gallery-thumbs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; }
+      .gallery-thumbs button { flex: 0 0 68px; width: 68px; height: 68px; }
       .product-copy h1 { font-size: clamp(2rem, 11vw, 2.65rem) !important; margin-bottom: 14px !important; overflow-wrap: anywhere; }
       .product-description { font-size: 1rem !important; margin-bottom: 18px !important; line-height: 1.65; }
       .product-price { font-size: 2rem !important; }
@@ -77,6 +151,7 @@ import { assetUrl } from '../../core/api.config';
 export class ProductDetailsComponent implements OnInit {
   product: Product | undefined;
   stores: Store[] = [];
+  selectedImageIndex = 0;
 
   constructor(
     private route: ActivatedRoute,
@@ -93,9 +168,11 @@ export class ProductDetailsComponent implements OnInit {
     this.productService.getProducts().subscribe({
       next: data => {
         this.product = data.find(product => product.id === id) || this.getFallbackProducts().find(product => product.id === id);
+        this.selectedImageIndex = 0;
       },
       error: () => {
         this.product = this.getFallbackProducts().find(product => product.id === id);
+        this.selectedImageIndex = 0;
       }
     });
   }
@@ -105,13 +182,41 @@ export class ProductDetailsComponent implements OnInit {
     return this.stores.filter(store => ids.includes(store.id));
   }
 
-  get imageUrl(): string {
-    if (!this.product?.imageUrl) return 'assets/images/placeholder.png';
-    if (this.product.imageUrl.startsWith('http') || this.product.imageUrl.startsWith('assets/')) {
-      return this.product.imageUrl;
+  get galleryImages(): string[] {
+    if (!this.product) {
+      return [];
     }
 
-    return assetUrl(this.product.imageUrl);
+    return [...(this.product.imageUrls || []), this.product.imageUrl]
+      .filter((url): url is string => Boolean(url?.trim()))
+      .map(url => url.trim())
+      .filter((url, index, urls) => urls.findIndex(item => item.toLowerCase() === url.toLowerCase()) === index);
+  }
+
+  get selectedImageUrl(): string {
+    return this.getImgUrl(this.galleryImages[this.selectedImageIndex] || this.product?.imageUrl);
+  }
+
+  selectImage(index: number): void {
+    this.selectedImageIndex = index;
+  }
+
+  changeImage(direction: number): void {
+    const total = this.galleryImages.length;
+    if (total <= 1) {
+      return;
+    }
+
+    this.selectedImageIndex = (this.selectedImageIndex + direction + total) % total;
+  }
+
+  getImgUrl(url: string | undefined): string {
+    if (!url) return 'assets/images/placeholder.png';
+    if (url.startsWith('http') || url.startsWith('assets/')) {
+      return url;
+    }
+
+    return assetUrl(url);
   }
 
   addToCart() {
@@ -147,6 +252,7 @@ export class ProductDetailsComponent implements OnInit {
         description: 'Soft rose hoodie and wide-leg pants with a quiet premium streetwear mood.',
         price: 1450,
         imageUrl: 'assets/images/moon-look-pink-set.png',
+        imageUrls: ['assets/images/moon-look-pink-set.png'],
         category: 'Winter',
         stockQuantity: 18,
         sizes: ['S', 'M', 'L', 'XL'],
@@ -159,6 +265,7 @@ export class ProductDetailsComponent implements OnInit {
         description: 'A relaxed charcoal matching set designed for bold everyday comfort.',
         price: 1550,
         imageUrl: 'assets/images/moon-look-charcoal-set.png',
+        imageUrls: ['assets/images/moon-look-charcoal-set.png'],
         category: 'Winter',
         stockQuantity: 16,
         sizes: ['S', 'M', 'L', 'XL'],
@@ -171,6 +278,7 @@ export class ProductDetailsComponent implements OnInit {
         description: 'Deep burgundy lounge set with a statement premium finish.',
         price: 1650,
         imageUrl: 'assets/images/moon-look-burgundy-set.png',
+        imageUrls: ['assets/images/moon-look-burgundy-set.png'],
         category: 'Winter',
         stockQuantity: 14,
         sizes: ['S', 'M', 'L', 'XL'],
@@ -183,6 +291,7 @@ export class ProductDetailsComponent implements OnInit {
         description: 'Bright pink hoodie paired with oversized denim energy for standout summer nights.',
         price: 1250,
         imageUrl: 'assets/images/moon-look-pink-hoodie.png',
+        imageUrls: ['assets/images/moon-look-pink-hoodie.png'],
         category: 'Summer',
         stockQuantity: 20,
         sizes: ['S', 'M', 'L', 'XL'],
@@ -195,6 +304,7 @@ export class ProductDetailsComponent implements OnInit {
         description: 'Light cream two-piece set made for clean, effortless warm-weather styling.',
         price: 1350,
         imageUrl: 'assets/images/moon-look-cream-set.png',
+        imageUrls: ['assets/images/moon-look-cream-set.png'],
         category: 'Summer',
         stockQuantity: 17,
         sizes: ['S', 'M', 'L', 'XL'],
@@ -207,6 +317,7 @@ export class ProductDetailsComponent implements OnInit {
         description: 'Layered neutral lounge fit with soft movement and a polished Moon Store look.',
         price: 1500,
         imageUrl: 'assets/images/moon-look-layered-lounge.png',
+        imageUrls: ['assets/images/moon-look-layered-lounge.png'],
         category: 'Summer',
         stockQuantity: 15,
         sizes: ['S', 'M', 'L', 'XL'],

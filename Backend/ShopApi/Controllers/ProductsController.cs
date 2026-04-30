@@ -65,6 +65,7 @@ public class ProductsController : ControllerBase
         existingProduct.Price = product.Price;
         existingProduct.CostPrice = product.CostPrice;
         existingProduct.ImageUrl = product.ImageUrl;
+        existingProduct.ImageUrlsCsv = product.ImageUrlsCsv;
         existingProduct.Category = product.Category.Trim();
         existingProduct.Supplier = product.Supplier.Trim();
         existingProduct.StockQuantity = product.StockQuantity;
@@ -156,6 +157,7 @@ public class ProductsController : ControllerBase
         product.Description = product.Description.Trim();
         product.Category = string.IsNullOrWhiteSpace(product.Category) ? "Unsorted" : product.Category.Trim();
         product.Supplier = string.IsNullOrWhiteSpace(product.Supplier) ? "Moon Supply" : product.Supplier.Trim();
+        product.ImageUrls = product.ImageUrls;
         product.Sizes = product.Sizes;
         product.Colors = product.Colors;
         product.AvailableStoreIds = product.AvailableStoreIds;

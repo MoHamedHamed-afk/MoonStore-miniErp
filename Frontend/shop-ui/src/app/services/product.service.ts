@@ -10,6 +10,7 @@ export interface Product {
   price: number;
   costPrice?: number;
   imageUrl?: string;
+  imageUrls?: string[];
   category?: string;
   supplier?: string;
   stockQuantity?: number;

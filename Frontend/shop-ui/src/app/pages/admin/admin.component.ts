@@ -81,6 +81,11 @@ const dashboardLabels = {
     colors: 'Colors',
     availableStores: 'Available in stores',
     productImage: 'Product Image',
+    productImages: 'Product Images',
+    productImagesHint: 'Upload more than one image. The first image is used on the home page.',
+    mainImage: 'Main',
+    makeMain: 'Use as main',
+    removeImage: 'Remove',
     uploadSuccess: 'Image uploaded to Cloudinary.',
     viewUploadedImage: 'View uploaded image',
     saveChanges: 'Save Changes',
@@ -172,6 +177,11 @@ const dashboardLabels = {
     colors: 'الألوان',
     availableStores: 'متاح في الفروع',
     productImage: 'صورة المنتج',
+    productImages: 'صور المنتج',
+    productImagesHint: 'ارفع أكثر من صورة. أول صورة تظهر في الصفحة الرئيسية.',
+    mainImage: 'الرئيسية',
+    makeMain: 'اجعلها الرئيسية',
+    removeImage: 'حذف',
     uploadSuccess: 'تم رفع الصورة إلى Cloudinary.',
     viewUploadedImage: 'عرض الصورة المرفوعة',
     saveChanges: 'حفظ التعديل',
@@ -379,12 +389,21 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
             </div>
 
             <label>
-              {{ label('productImage') }}
-              <input type="file" accept="image/*" [disabled]="isUploadingImage" (change)="uploadImage($event)">
+              {{ label('productImages') }}
+              <input type="file" accept="image/*" multiple [disabled]="isUploadingImage" (change)="uploadImage($event)">
               <small *ngIf="isUploadingImage">Uploading image...</small>
+              <small *ngIf="!isUploadingImage">{{ label('productImagesHint') }}</small>
             </label>
 
             <img *ngIf="productForm.imageUrl" class="preview-image" [src]="getImgUrl(productForm.imageUrl)" alt="Product preview">
+            <div class="image-gallery-editor" *ngIf="productImageUrls.length">
+              <article *ngFor="let image of productImageUrls; let index = index" class="gallery-editor-item">
+                <img [src]="getImgUrl(image)" [alt]="'Product image ' + (index + 1)">
+                <span *ngIf="index === 0">{{ label('mainImage') }}</span>
+                <button type="button" class="ghost-btn" *ngIf="index > 0" (click)="setMainProductImage(index)">{{ label('makeMain') }}</button>
+                <button type="button" class="ghost-btn danger" (click)="removeProductImage(index)">{{ label('removeImage') }}</button>
+              </article>
+            </div>
             <a *ngIf="lastUploadedImageUrl" class="upload-link" [href]="lastUploadedImageUrl" target="_blank" rel="noopener">
               {{ label('viewUploadedImage') }}
             </a>
@@ -418,7 +437,7 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
             <div class="glass empty-card error-card" *ngIf="productsError">{{ productsError }}</div>
 
             <article class="glass product-row" *ngFor="let product of paginatedProducts">
-              <img [src]="getImgUrl(product.imageUrl)" [alt]="product.name">
+              <img [src]="getImgUrl(getMainProductImage(product))" [alt]="product.name">
               <div>
                 <h3>{{ product.name }}</h3>
                 <p>{{ product.category || label('uncategorized') }} · {{ product.price }} EGP · {{ label('stock') }} {{ product.stockQuantity || 0 }}</p>
@@ -798,6 +817,10 @@ export class AdminComponent implements OnInit {
     return this.getPageCount(this.moderators.length);
   }
 
+  get productImageUrls(): string[] {
+    return this.normalizeImageUrls(this.productForm);
+  }
+
   setProductSearch(value: string): void {
     this.productSearch = value;
     this.productPage = 1;
@@ -914,10 +937,13 @@ export class AdminComponent implements OnInit {
   }
 
   saveProduct(): void {
+    const imageUrls = this.productImageUrls;
     const payload: Product = {
       ...this.productForm,
       price: Number(this.productForm.price) || 0,
       stockQuantity: Number(this.productForm.stockQuantity) || 0,
+      imageUrl: imageUrls[0] || this.productForm.imageUrl,
+      imageUrls,
       sizes: this.parseCsv(this.sizesInput),
       colors: this.parseCsv(this.colorsInput),
       availableStoreIds: this.productForm.availableStoreIds?.length ? this.productForm.availableStoreIds : [this.stores[0]?.id || 1]
@@ -946,6 +972,8 @@ export class AdminComponent implements OnInit {
     this.editingProductId = product.id;
     this.productForm = {
       ...product,
+      imageUrl: this.getMainProductImage(product),
+      imageUrls: this.normalizeImageUrls(product),
       availableStoreIds: [...(product.availableStoreIds || [])],
       sizes: [...(product.sizes || [])],
       colors: [...(product.colors || [])]
@@ -977,32 +1005,34 @@ export class AdminComponent implements OnInit {
 
   uploadImage(event: Event): void {
     const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) {
+    const files = Array.from(input.files || []);
+    if (files.length === 0) {
       return;
     }
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     this.isUploadingImage = true;
     this.lastUploadedImageUrl = '';
-    this.http.post<{ Url?: string; url?: string; Provider?: string; provider?: string }>(apiUrl('/api/uploads'), formData, {
-      headers: { Authorization: `Bearer ${this.authService.getToken()}` }
-    }).subscribe({
-      next: response => {
-        this.productForm.imageUrl = response.Url || response.url || this.productForm.imageUrl;
-        this.lastUploadedImageUrl = this.getImgUrl(this.productForm.imageUrl);
-        this.isUploadingImage = false;
-        const provider = response.Provider || response.provider || 'Cloudinary';
-        this.toastService.show(`${this.label('uploadSuccess')} (${provider})`, 'success');
-      },
-      error: error => {
-        this.isUploadingImage = false;
-        const detail = error?.error?.details || error?.error?.Details || error?.error?.error || error?.error?.Error || error?.error || error?.message;
-        this.toastService.show(detail ? `Could not upload image: ${detail}` : 'Could not upload image.', 'error');
-      }
-    });
+    this.uploadImageFiles(files, 0, []);
+    input.value = '';
+  }
+
+  setMainProductImage(index: number): void {
+    const images = this.productImageUrls;
+    const [selected] = images.splice(index, 1);
+    if (!selected) {
+      return;
+    }
+
+    images.unshift(selected);
+    this.productForm.imageUrls = images;
+    this.productForm.imageUrl = images[0];
+  }
+
+  removeProductImage(index: number): void {
+    const images = this.productImageUrls;
+    images.splice(index, 1);
+    this.productForm.imageUrls = images;
+    this.productForm.imageUrl = images[0] || '';
   }
 
   resetProductForm(): void {
@@ -1193,6 +1223,10 @@ export class AdminComponent implements OnInit {
     return assetUrl(url);
   }
 
+  getMainProductImage(product: Product): string | undefined {
+    return this.normalizeImageUrls(product)[0];
+  }
+
   joinList(value?: string[]): string {
     return (value || []).join(', ');
   }
@@ -1243,6 +1277,46 @@ export class AdminComponent implements OnInit {
       .split(',')
       .map(item => item.trim())
       .filter(Boolean);
+  }
+
+  private normalizeImageUrls(product: Product): string[] {
+    return [...(product.imageUrls || []), product.imageUrl]
+      .filter((url): url is string => Boolean(url?.trim()))
+      .map(url => url.trim())
+      .filter((url, index, urls) => urls.findIndex(item => item.toLowerCase() === url.toLowerCase()) === index);
+  }
+
+  private uploadImageFiles(files: File[], index: number, uploadedUrls: string[]): void {
+    const file = files[index];
+    if (!file) {
+      const existingUrls = this.productImageUrls;
+      const allUrls = [...existingUrls, ...uploadedUrls]
+        .filter((url, urlIndex, urls) => urls.findIndex(item => item.toLowerCase() === url.toLowerCase()) === urlIndex);
+
+      this.productForm.imageUrls = allUrls;
+      this.productForm.imageUrl = allUrls[0] || this.productForm.imageUrl;
+      this.lastUploadedImageUrl = this.getImgUrl(uploadedUrls[uploadedUrls.length - 1] || this.productForm.imageUrl);
+      this.isUploadingImage = false;
+      this.toastService.show(`${this.label('uploadSuccess')} (${uploadedUrls.length})`, 'success');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    this.http.post<{ Url?: string; url?: string }>(apiUrl('/api/uploads'), formData, {
+      headers: { Authorization: `Bearer ${this.authService.getToken()}` }
+    }).subscribe({
+      next: response => {
+        const uploadedUrl = response.Url || response.url;
+        this.uploadImageFiles(files, index + 1, uploadedUrl ? [...uploadedUrls, uploadedUrl] : uploadedUrls);
+      },
+      error: error => {
+        this.isUploadingImage = false;
+        const detail = error?.error?.details || error?.error?.Details || error?.error?.error || error?.error?.Error || error?.error || error?.message;
+        this.toastService.show(detail ? `Could not upload image: ${detail}` : 'Could not upload image.', 'error');
+      }
+    });
   }
 
   private createBlankProduct(): Product {

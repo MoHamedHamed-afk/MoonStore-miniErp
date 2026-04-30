@@ -24,6 +24,7 @@ public class ShopContext : DbContext
         modelBuilder.Entity<Product>()
             .Ignore(product => product.Sizes)
             .Ignore(product => product.Colors)
+            .Ignore(product => product.ImageUrls)
             .Ignore(product => product.AvailableStoreIds);
 
         modelBuilder.Entity<Order>()

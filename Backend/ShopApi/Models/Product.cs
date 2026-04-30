@@ -10,6 +10,7 @@ public class Product
     public decimal Price { get; set; }
     public decimal CostPrice { get; set; }
     public string? ImageUrl { get; set; }
+    public string ImageUrlsCsv { get; set; } = string.Empty;
     public string Category { get; set; } = "Summer";
     public string Supplier { get; set; } = "Moon Supply";
     public int StockQuantity { get; set; } = 25;
@@ -30,6 +31,32 @@ public class Product
     {
         get => SplitCsv(ColorsCsv);
         set => ColorsCsv = JoinCsv(value);
+    }
+
+    [NotMapped]
+    public List<string> ImageUrls
+    {
+        get
+        {
+            var urls = SplitCsv(ImageUrlsCsv);
+            if (!string.IsNullOrWhiteSpace(ImageUrl) && !urls.Contains(ImageUrl))
+            {
+                urls.Insert(0, ImageUrl);
+            }
+
+            return urls;
+        }
+        set
+        {
+            var urls = value?
+                .Where(url => !string.IsNullOrWhiteSpace(url))
+                .Select(url => url.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList() ?? [];
+
+            ImageUrlsCsv = JoinCsv(urls);
+            ImageUrl = urls.FirstOrDefault();
+        }
     }
 
     [NotMapped]
