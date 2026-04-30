@@ -29,7 +29,7 @@ import { assetUrl } from '../../core/api.config';
              <img class="cart-product-image" [src]="getImgUrl(item.product?.imageUrl)" [alt]="item.product?.name || 'Cart product'" loading="lazy" decoding="async" style="width: 80px; height: 80px; object-fit: cover; border-radius: 8px;">
              <div class="cart-product-copy">
                <h3 style="font-size: 1.2rem;">{{ item.product?.name }}</h3>
-               <p style="opacity: 0.8;">\${{ item.unitPrice || item.product?.price }}</p>
+               <p style="opacity: 0.8;">{{ item.unitPrice || item.product?.price }} EGP</p>
                <p style="opacity: 0.68; font-size: .85rem;" *ngIf="item.selectedSize || item.selectedColor">
                  {{ item.selectedSize || '-' }} / {{ item.selectedColor || '-' }}
                </p>
@@ -44,7 +44,7 @@ import { assetUrl } from '../../core/api.config';
         </div>
 
         <div class="glass cart-summary" style="margin-top: 40px; padding: 30px; border-radius: 16px; text-align: right;">
-          <h2 style="font-size: 2rem; margin-bottom: 20px;">{{ translation.t('cart.total') }}: <span style="color: var(--primary-accent);">\${{ getTotal() }}</span></h2>
+          <h2 style="font-size: 2rem; margin-bottom: 20px;">{{ translation.t('cart.total') }}: <span style="color: var(--primary-accent);">{{ getTotal() }} EGP</span></h2>
           <div class="cart-summary-actions" style="display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap;">
             <button type="button" class="btn" style="padding: 15px 24px; background: #ff4757;" (click)="clearCart()">{{ translation.t('common.removeAll') }}</button>
             <button type="button" class="btn" style="padding: 15px 40px; font-size: 1.2rem;" (click)="checkout()">{{ translation.t('cart.proceed') }}</button>

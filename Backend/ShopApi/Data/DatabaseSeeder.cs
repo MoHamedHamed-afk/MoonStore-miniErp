@@ -72,6 +72,11 @@ public static class DatabaseSeeder
 
         RemoveLegacySampleProducts(context);
 
+        if (!context.Products.Any())
+        {
+            context.Products.AddRange(CreateFallbackProducts());
+        }
+
         if (context.Products.Any())
         {
             foreach (var product in context.Products)
@@ -102,18 +107,105 @@ public static class DatabaseSeeder
 
         var legacySamples = context.Products
             .AsEnumerable()
-            .Where(product =>
-                legacySampleNames.Contains(product.Name)
-                && (
-                    string.IsNullOrWhiteSpace(product.ImageUrl)
-                    || product.ImageUrl.StartsWith("assets/images/", StringComparison.OrdinalIgnoreCase)
-                ))
+            .Where(product => legacySampleNames.Contains(product.Name))
             .ToList();
 
         if (legacySamples.Count > 0)
         {
             context.Products.RemoveRange(legacySamples);
         }
+    }
+
+    private static IEnumerable<Product> CreateFallbackProducts()
+    {
+        var now = DateTime.UtcNow;
+        return new[]
+        {
+            new Product
+            {
+                Name = "Rose Moon Hoodie Set",
+                Description = "Soft rose hoodie and wide-leg pants with a quiet premium streetwear mood.",
+                Price = 1450m,
+                CostPrice = 820m,
+                ImageUrl = "assets/images/moon-look-pink-set.png",
+                Category = "Winter",
+                StockQuantity = 18,
+                SizesCsv = "S,M,L,XL",
+                ColorsCsv = "Rose,Black",
+                AvailableStoreIdsCsv = "1,2",
+                CreatedAt = now
+            },
+            new Product
+            {
+                Name = "Charcoal Signature Set",
+                Description = "A relaxed charcoal matching set designed for bold everyday comfort.",
+                Price = 1550m,
+                CostPrice = 900m,
+                ImageUrl = "assets/images/moon-look-charcoal-set.png",
+                Category = "Winter",
+                StockQuantity = 16,
+                SizesCsv = "S,M,L,XL",
+                ColorsCsv = "Charcoal,Black",
+                AvailableStoreIdsCsv = "1,3",
+                CreatedAt = now
+            },
+            new Product
+            {
+                Name = "Burgundy Night Set",
+                Description = "Deep burgundy lounge set with a statement premium finish.",
+                Price = 1650m,
+                CostPrice = 940m,
+                ImageUrl = "assets/images/moon-look-burgundy-set.png",
+                Category = "Winter",
+                StockQuantity = 14,
+                SizesCsv = "S,M,L,XL",
+                ColorsCsv = "Burgundy,Black",
+                AvailableStoreIdsCsv = "2,3",
+                CreatedAt = now
+            },
+            new Product
+            {
+                Name = "Pink Denim Moon Hoodie",
+                Description = "Bright pink hoodie paired with oversized denim energy for standout summer nights.",
+                Price = 1250m,
+                CostPrice = 710m,
+                ImageUrl = "assets/images/moon-look-pink-hoodie.png",
+                Category = "Summer",
+                StockQuantity = 20,
+                SizesCsv = "S,M,L,XL",
+                ColorsCsv = "Pink,Blue",
+                AvailableStoreIdsCsv = "1,2",
+                CreatedAt = now
+            },
+            new Product
+            {
+                Name = "Cream Breeze Set",
+                Description = "Light cream two-piece set made for clean, effortless warm-weather styling.",
+                Price = 1350m,
+                CostPrice = 760m,
+                ImageUrl = "assets/images/moon-look-cream-set.png",
+                Category = "Summer",
+                StockQuantity = 17,
+                SizesCsv = "S,M,L,XL",
+                ColorsCsv = "Cream,White",
+                AvailableStoreIdsCsv = "1,3",
+                CreatedAt = now
+            },
+            new Product
+            {
+                Name = "Layered Lounge Moon Set",
+                Description = "Layered neutral lounge fit with soft movement and a polished Moon Store look.",
+                Price = 1500m,
+                CostPrice = 860m,
+                ImageUrl = "assets/images/moon-look-layered-lounge.png",
+                Category = "Summer",
+                StockQuantity = 15,
+                SizesCsv = "S,M,L,XL",
+                ColorsCsv = "Beige,Light Blue",
+                AvailableStoreIdsCsv = "2,3",
+                CreatedAt = now
+            }
+        };
     }
 
     private static string? GetSeedValue(IConfiguration configuration, string key)

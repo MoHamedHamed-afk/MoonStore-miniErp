@@ -33,7 +33,7 @@ import { assetUrl } from '../../core/api.config';
           </div>
           <div class="product-info" style="text-align: center;">
             <h3 style="font-size: 1.2rem; margin-bottom: 10px;">{{ fav.product?.name }}</h3>
-            <div class="price" style="font-size: 1.5rem; font-weight: 800; color: var(--primary-accent); margin-bottom: 20px;">\${{ fav.product?.price }}</div>
+            <div class="price" style="font-size: 1.5rem; font-weight: 800; color: var(--primary-accent); margin-bottom: 20px;">{{ fav.product?.price }} EGP</div>
             <div class="action-buttons favourite-actions" style="display: flex; gap: 10px; justify-content: center;">
               <button type="button" class="btn" style="padding: 10px;" (click)="addToCart(fav.product?.id!)">{{ translation.t('favourites.addToCart') }}</button>
               <button type="button" class="btn" style="padding: 10px; background: #ff4757;" (click)="removeFav(fav.product?.id!)">{{ translation.t('favourites.remove') }}</button>

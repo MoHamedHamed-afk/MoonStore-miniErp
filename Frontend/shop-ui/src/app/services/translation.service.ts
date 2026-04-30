@@ -174,7 +174,7 @@ const translations: Record<AppLanguage, TranslationTree> = {
       title: 'My Orders',
       subtitle: 'Track every stage of your delivery and preview the products inside each order.',
       empty: 'No orders yet. Once you complete checkout, your orders will appear here.',
-      qtyPrice: 'Qty {{quantity}} • ${{price}}',
+      qtyPrice: 'Qty {{quantity}} • {{price}} EGP',
       cancel: 'Cancel Order',
       requestReturn: 'Request Return',
       actions: {
@@ -459,7 +459,7 @@ const translations: Record<AppLanguage, TranslationTree> = {
       title: 'طلباتي',
       subtitle: 'تابع كل مرحلة من مراحل الشحن وشاهد المنتجات الموجودة داخل كل طلب.',
       empty: 'لا توجد طلبات بعد. بعد إتمام الشراء ستظهر طلباتك هنا.',
-      qtyPrice: 'الكمية {{quantity}} • ${{price}}',
+      qtyPrice: 'الكمية {{quantity}} • {{price}} جنيه',
       cancel: 'إلغاء الطلب',
       requestReturn: 'طلب إرجاع',
       actions: {

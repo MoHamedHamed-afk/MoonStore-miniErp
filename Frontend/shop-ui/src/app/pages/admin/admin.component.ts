@@ -421,7 +421,7 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
               <img [src]="getImgUrl(product.imageUrl)" [alt]="product.name">
               <div>
                 <h3>{{ product.name }}</h3>
-                <p>{{ product.category || label('uncategorized') }} · \${{ product.price }} · {{ label('stock') }} {{ product.stockQuantity || 0 }}</p>
+                <p>{{ product.category || label('uncategorized') }} · {{ product.price }} EGP · {{ label('stock') }} {{ product.stockQuantity || 0 }}</p>
                 <small>
                   {{ joinList(product.sizes) || label('noSizes') }} ·
                   {{ joinList(product.colors) || label('noColors') }} ·
@@ -491,7 +491,7 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
               <div *ngFor="let item of order.items">
                 <strong>{{ item.productName }}</strong>
                 <span>
-                  Qty {{ item.quantity }} · \${{ item.unitPrice }}
+                  Qty {{ item.quantity }} · {{ item.unitPrice }} EGP
                   <ng-container *ngIf="item.selectedSize"> · Size {{ item.selectedSize }}</ng-container>
                   <ng-container *ngIf="item.selectedColor"> · Color {{ item.selectedColor }}</ng-container>
                 </span>
@@ -505,7 +505,7 @@ type DashboardLabelKey = keyof typeof dashboardLabels.en;
                 · {{ order.address }}
                 <ng-container *ngIf="order.paymentMethod"> · {{ formatPaymentMethod(order.paymentMethod) }}</ng-container>
               </span>
-              <strong>\${{ order.totalAmount }}</strong>
+              <strong>{{ order.totalAmount }} EGP</strong>
             </div>
 
             <div class="order-actions">

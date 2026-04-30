@@ -113,7 +113,7 @@ import * as THREE from 'three';
                 <img [src]="getImgUrl(item.product?.imageUrl)" [alt]="item.product?.name || 'Product'">
                 <div class="variant-copy">
                   <strong>{{ item.product?.name }}</strong>
-                  <span>Qty {{ item.quantity }} · \${{ item.unitPrice || item.product?.price || 0 }}</span>
+                  <span>Qty {{ item.quantity }} · {{ item.unitPrice || item.product?.price || 0 }} EGP</span>
                 </div>
                 <label *ngIf="item.product?.sizes?.length">
                   Size
@@ -140,7 +140,7 @@ import * as THREE from 'three';
 
             <div class="order-summary">
               <span>{{ translation.t('shipping.orderTotal') }}</span>
-              <strong>\${{ totalAmount }}</strong>
+              <strong>{{ totalAmount }} EGP</strong>
             </div>
 
             <button type="submit" class="btn submit-btn" [disabled]="shippingForm.invalid || totalAmount <= 0 || isSubmitting">

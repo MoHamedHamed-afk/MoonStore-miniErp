@@ -21,7 +21,7 @@ import { assetUrl } from '../../core/api.config';
         <div class="product-copy" style="flex: 1; min-width: 300px; display: flex; flex-direction: column; justify-content: center;">
           <h1 style="font-size: 3rem; margin-bottom: 20px;">{{ product.name }}</h1>
           <p class="product-description" style="font-size: 1.2rem; margin-bottom: 30px; opacity: 0.8;">{{ product.description }}</p>
-          <div class="product-price" style="font-size: 2.5rem; font-weight: 800; color: var(--primary-accent); margin-bottom: 16px;">\${{ product.price }}</div>
+          <div class="product-price" style="font-size: 2.5rem; font-weight: 800; color: var(--primary-accent); margin-bottom: 16px;">{{ product.price }} EGP</div>
           <div class="variant-info" style="display: grid; gap: 14px; margin-bottom: 22px;">
             <div class="variant-group" *ngIf="product.sizes?.length" style="display: grid; gap: 8px;">
               <strong>Available sizes</strong>

@@ -67,7 +67,7 @@ import { assetUrl } from '../../core/api.config';
                 <span *ngIf="order.phoneNumber">{{ order.phoneNumber }}</span>
                 <span *ngIf="order.paymentMethod">{{ formatPaymentMethod(order.paymentMethod) }}</span>
                 <span>{{ order.address }}</span>
-                <strong>\${{ order.totalAmount }}</strong>
+                <strong>{{ order.totalAmount }} EGP</strong>
               </div>
 
               <div class="order-actions">
