@@ -31,14 +31,14 @@ public class CloudinaryImageUploader
     public async Task<string> UploadAsync(IFormFile file, CancellationToken cancellationToken)
     {
         var cloudName = GetSetting("Cloudinary:CloudName", "CLOUDINARY_CLOUD_NAME")!;
-        var uploadPreset = GetSetting("Cloudinary:UploadPreset", "CLOUDINARY_UPLOAD_PRESET");
-        if (!string.IsNullOrWhiteSpace(uploadPreset))
+        var apiKey = GetSetting("Cloudinary:ApiKey", "CLOUDINARY_API_KEY");
+        var apiSecret = GetSetting("Cloudinary:ApiSecret", "CLOUDINARY_API_SECRET");
+        if (string.IsNullOrWhiteSpace(apiKey) || string.IsNullOrWhiteSpace(apiSecret))
         {
+            var uploadPreset = GetSetting("Cloudinary:UploadPreset", "CLOUDINARY_UPLOAD_PRESET")!;
             return await UploadUnsignedAsync(cloudName, uploadPreset, file, cancellationToken);
         }
 
-        var apiKey = GetSetting("Cloudinary:ApiKey", "CLOUDINARY_API_KEY")!;
-        var apiSecret = GetSetting("Cloudinary:ApiSecret", "CLOUDINARY_API_SECRET")!;
         var folder = GetSetting("Cloudinary:Folder", "CLOUDINARY_FOLDER") ?? "moon-store/products";
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
 
@@ -67,7 +67,7 @@ public class CloudinaryImageUploader
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException($"Cloudinary upload failed: {responseBody}");
+            throw new InvalidOperationException($"Cloudinary signed upload failed: {responseBody}");
         }
 
         using var json = JsonDocument.Parse(responseBody);
