@@ -865,7 +865,7 @@ export class AdminComponent implements OnInit {
 
     this.productService.getProducts().subscribe({
       next: products => {
-        this.products = products;
+        this.products = products.length > 0 ? products : this.getFallbackProducts();
         this.productPage = this.clampPage(this.productPage, this.productPageCount);
         this.isLoadingProducts = false;
       },
@@ -1207,6 +1207,83 @@ export class AdminComponent implements OnInit {
       return this.label('noStores');
     }
     return ids.map(id => this.getStoreName(id)).join(', ');
+  }
+
+  getFallbackProducts(): Product[] {
+    return [
+      {
+        id: 1001,
+        name: 'Rose Moon Hoodie Set',
+        description: 'Soft rose hoodie and wide-leg pants with a quiet premium streetwear mood.',
+        price: 1450,
+        imageUrl: 'assets/images/moon-look-pink-set.png',
+        category: 'Winter',
+        stockQuantity: 18,
+        sizes: ['S', 'M', 'L', 'XL'],
+        colors: ['Rose', 'Black'],
+        availableStoreIds: [1, 2]
+      },
+      {
+        id: 1002,
+        name: 'Charcoal Signature Set',
+        description: 'A relaxed charcoal matching set designed for bold everyday comfort.',
+        price: 1550,
+        imageUrl: 'assets/images/moon-look-charcoal-set.png',
+        category: 'Winter',
+        stockQuantity: 16,
+        sizes: ['S', 'M', 'L', 'XL'],
+        colors: ['Charcoal', 'Black'],
+        availableStoreIds: [1, 3]
+      },
+      {
+        id: 1003,
+        name: 'Burgundy Night Set',
+        description: 'Deep burgundy lounge set with a statement premium finish.',
+        price: 1650,
+        imageUrl: 'assets/images/moon-look-burgundy-set.png',
+        category: 'Winter',
+        stockQuantity: 14,
+        sizes: ['S', 'M', 'L', 'XL'],
+        colors: ['Burgundy', 'Black'],
+        availableStoreIds: [2, 3]
+      },
+      {
+        id: 1004,
+        name: 'Pink Denim Moon Hoodie',
+        description: 'Bright pink hoodie paired with oversized denim energy for standout summer nights.',
+        price: 1250,
+        imageUrl: 'assets/images/moon-look-pink-hoodie.png',
+        category: 'Summer',
+        stockQuantity: 20,
+        sizes: ['S', 'M', 'L', 'XL'],
+        colors: ['Pink', 'Blue'],
+        availableStoreIds: [1, 2]
+      },
+      {
+        id: 1005,
+        name: 'Cream Breeze Set',
+        description: 'Light cream two-piece set made for clean, effortless warm-weather styling.',
+        price: 1350,
+        imageUrl: 'assets/images/moon-look-cream-set.png',
+        category: 'Summer',
+        stockQuantity: 17,
+        sizes: ['S', 'M', 'L', 'XL'],
+        colors: ['Cream', 'White'],
+        availableStoreIds: [1, 3]
+      },
+      {
+        id: 1006,
+        name: 'Layered Lounge Moon Set',
+        description: 'Layered neutral lounge fit with soft movement and a polished Moon Store look.',
+        price: 1500,
+        imageUrl: 'assets/images/moon-look-layered-lounge.png',
+        category: 'Summer',
+        stockQuantity: 15,
+        sizes: ['S', 'M', 'L', 'XL'],
+        colors: ['Beige', 'Light Blue'],
+        availableStoreIds: [2, 3]
+      }
+    ];
   }
 
   label(key: DashboardLabelKey): string {
